@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #FAF9F6;
+  }
+
+  body {
+    background-color: #FAF9F6;
+    color: #1C1C1E;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    font-weight: 400;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings use Playfair Display */
+  h1, h2, h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background-color: #FEF3C7;
+    color: #92400E;
+  }
+}
+
+/* ===========================
+   Typography helpers
+   =========================== */
+.font-serif { font-family: 'Playfair Display', Georgia, serif; }
+.font-mono  { font-family: 'JetBrains Mono', Menlo, monospace; }
+
+/* ===========================
+   Card component (light)
+   =========================== */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E8E5DF;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+  border-color: #D97706;
+}
+
+/* ===========================
+   Card component (dark / hub)
+   =========================== */
+.card-dark {
+  background: #1C1C1E;
+  border: 1px solid #2C2C2A;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card-dark:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border-color: #D97706;
+}
+
+/* ===========================
+   Section spacing
+   =========================== */
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #D97706;
+  margin-bottom: 0.75rem;
+}
+
+/* ===========================
+   Accent divider
+   =========================== */
+.accent-bar {
+  width: 2rem;
+  height: 3px;
+  background: linear-gradient(to right, #D97706, #F59E0B);
+  border-radius: 2px;
+}
+
+/* ===========================
+   Scrollbar
+   =========================== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #FAF9F6; }
+::-webkit-scrollbar-thumb { background: #D4C9B8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #D97706; }

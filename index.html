@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="小福老师 - AI探索者 · 个人网站" />
+    <title>小福老师</title>
+    <script>
+      // 在 React 渲染前恢复 dark/light 状态，避免闪屏
+      try {
+        var cfg = JSON.parse(localStorage.getItem('site_config_v2') || '{}');
+        if (cfg._theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch(e) {}
+    </script>
+    <style>
+      /* 科技蓝黑底色 */
+      .dark body, body.dark { background: #0b1120; color: #e2e8f0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
