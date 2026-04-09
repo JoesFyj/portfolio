@@ -1,78 +1,105 @@
-# 朴俊浩 · 个人作品集
+# 小福老师 · 个人作品集
 
-> 个人网站 + 自媒体创作自动化中心
+> 甘肃深山 → 西安城 → AI 探索者
+> 职业自由、不靠时间赚钱、每天阅读锻炼就能有收入的追梦人
 
-## 运行
+🌐 **线上地址**：https://portfolio-zhifuxia.vercel.app
+
+---
+
+## 👋 我是谁
+
+我叫小福老师，三十岁。
+
+从甘肃深山放牛娃，靠读书走到西安城，拿下硕士学位。
+
+现在正在做一件事：**用 AI 把自己变成一家公司**。
+
+我的梦想很简单：
+- 一家小书店 + 一个朴素的健身房
+- 每天阅读、锻炼、接娃做饭陪家人
+- 不用靠时间换钱，靠能力和价值
+
+---
+
+## 🚀 技术栈
+
+| 技术 | 用途 |
+|------|------|
+| React 19 + Vite | 前端框架 |
+| Tailwind CSS | 样式系统 |
+| Lucide React | 图标库 |
+| Vercel | 托管部署 |
+
+---
+
+## 📁 项目结构
+
+```
+portfolio/
+├── src/
+│   ├── components/          # 页面组件
+│   │   ├── Hero.jsx         # 首页 Hero（含打字机效果）
+│   │   ├── Nav.jsx           # 导航栏
+│   │   ├── HomeAbout.jsx    # 关于我
+│   │   ├── HomeTimeline.jsx # 成长轨迹（时间轴）
+│   │   ├── HomeValues.jsx   # 价值观
+│   │   ├── HomeConnect.jsx  # 联系方式
+│   │   ├── Footer.jsx       # 页脚
+│   │   └── AdminDashboard.jsx # 后台管理（配置站点）
+│   ├── lib/
+│   │   ├── defaultConfig.js # 默认配置数据
+│   │   └── siteConfig.js    # 配置读取逻辑
+│   ├── pages/
+│   │   ├── Home.jsx         # 首页
+│   │   └── Hub.jsx          # 作品中心
+│   └── App.jsx              # 主入口
+└── public/
+    └── assets               # 静态资源
+```
+
+---
+
+## ⚙️ 配置说明
+
+所有模块内容均在 `src/lib/defaultConfig.js` 中配置，修改后部署即生效。
+
+**联系信息** 在 `defaultConfig.js` → `homeConnect` 中修改（微信、公众号、即刻、推特、抖音）。
+
+---
+
+## 🛠️ 本地开发
 
 ```bash
-npm run dev      # 开发模式 http://localhost:5173
-npm run build    # 生产构建
-npm run preview  # 预览构建结果
+# 安装依赖
+npm install
+
+# 开发模式
+npm run dev      # http://localhost:5173
+
+# 生产构建
+npm run build
+
+# 预览构建
+npm run preview
 ```
 
-## 项目结构
+---
 
-```
-src/
-├── components/
-│   ├── SelfMedia.jsx    ← 自媒体创作中心（新增）
-│   ├── Nav.jsx
-│   ├── Hero.jsx
-│   ├── About.jsx
-│   ├── Portfolio.jsx
-│   └── Courses.jsx
-└── data/
-    └── content.js       ← 文章/作品数据
-```
+## 📝 写作风格
 
-## 内容创作中心（SelfMedia）
+- **真实** — 不堆砌、不煽情，敢承认困惑和失败
+- **朴素** — 口语感、短句为主、第一称"我"
+- **有血有肉** — 细节来自真实经历，不是写作模板
 
-自媒体自动化发布链路的管理面板，位于导航栏「创作中心」。
+---
 
-### 功能
+## 📬 找到我
 
-- **发布流程管道**：选题→写作→封面→公众号→小红书→音频，可视化显示每步完成状态
-- **文章列表**：显示每篇文章的发布进度、状态、阅读量
-- **一键发布**：执行全链路自动化（需 OpenClaw 后台运行）
-- **AI新闻音频**：抓取当日AI要闻，生成播报音频
-- **数据统计**：文章总数、已发布、草稿、总阅读量
+- 微信公众号：**生活的小虾**
+- 微信号：**小福老师**
+- GitHub：https://github.com/JoesFyj
 
-### 自动化链路
+---
 
-```
-用户触发 → OpenClaw skill → 读取文章
-       → 格式化（公众号/小红书不同版本）
-       → 生成封面图
-       → 推公众号草稿箱
-       → 推小红书草稿箱
-       → 录入飞书多维表
-       → 生成TTS音频
-```
-
-### 与 OpenClaw 的集成
-
-创作中心依赖 OpenClaw 后台执行实际发布操作：
-
-- **公众号发布**：调用 `youmind-wechat-article` skill
-- **小红书发布**：browser tool 模拟 Web 操作
-- **封面图生成**：调用 `canvas-design` skill
-- **TTS音频**：调用 `voice` skill（Edge TTS）
-- **多维表录入**：调用 `feishu_bitable` tool
-- **定时提醒**：cron job 每天 10:00 触发
-
-需要保持 OpenClaw（QClaw）后台运行，自动化链路才能完整执行。
-
-### 相关技能
-
-| 技能 | 路径 |
-|------|------|
-| multi-platform-publishing | `~/.openclaw/workspace/skills/multi-platform-publishing/` |
-| voice (TTS) | `~/.openclaw/workspace/skills/voice/` |
-| canvas-design | 需安装 |
-
-## 技术栈
-
-- React 19 + Vite 8
-- Tailwind CSS 3（温润米色调设计系统）
-- lucide-react 图标库
-- recharts（待安装，用于数据图表）
+*Last updated: 2026-04-09*
