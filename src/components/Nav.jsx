@@ -3,9 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { getConfig } from '../lib/siteConfig'
 import { Settings, Globe, Sun, Moon, Menu, X } from 'lucide-react'
 
-const cfg = getConfig()
-
 export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminClick }) {
+  const cfg = getConfig()
   const isZh = lang === 'zh'
   const isDark = theme === 'dark'
   const [menuOpen, setMenuOpen] = useState(false)
@@ -16,9 +15,9 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
   const mutedColor   = isDark ? '#8B949E' : '#6B6860'
   const borderColor  = isDark ? '#30363D' : '#E8E5DF'
   const activeBg     = isDark ? 'rgba(88,166,255,0.15)' : '#FEF3C7'
-  const navBg        = isDark ? 'rgba(13,17,23,0.92)' : 'rgba(250,249,246,0.85)'
+  const navBg        = isDark ? 'rgba(31,31,31,0.95)' : 'rgba(250,249,246,0.90)'
   const accentColor  = isDark ? '#58A6FF' : '#D97706'
-  const cardBg       = isDark ? '#161B22' : '#FFFFFF'
+  const cardBg       = isDark ? '#2D2D2D' : '#FFFFFF'
 
   function isActive(p) {
     if (p === '/') return path === '/'

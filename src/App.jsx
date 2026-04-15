@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Nav from './components/Nav'
+import DynamicBg from './components/DynamicBg'
 import Home from './pages/Home'
 import Hub from './pages/Hub'
 import HubOps from './pages/HubOps'
@@ -39,28 +40,31 @@ export default function App() {
     } catch (e) {}
   }
 
-  const bg = theme === 'dark' ? '#111110' : '#FAF9F6'
+  const bg = theme === 'dark' ? '#1F1F1F' : '#FAF9F6'
 
   return (
     <div className="min-h-screen" style={{ background: bg }}>
-      <Nav
-        lang={lang}
-        theme={theme}
-        onLangToggle={handleLangToggle}
-        onThemeToggle={handleThemeToggle}
-        onAdminClick={() => setShowAdmin(true)}
-      />
-      <Routes>
-        <Route path="/" element={<Home lang={lang} theme={theme} />} />
-        <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
-        <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
-      </Routes>
-      {showAdmin && (
-        <AdminDashboard
+      <DynamicBg theme={theme} />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <Nav
           lang={lang}
-          onClose={() => setShowAdmin(false)}
+          theme={theme}
+          onLangToggle={handleLangToggle}
+          onThemeToggle={handleThemeToggle}
+          onAdminClick={() => setShowAdmin(true)}
         />
-      )}
+        <Routes>
+          <Route path="/" element={<Home lang={lang} theme={theme} />} />
+          <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
+          <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
+        </Routes>
+        {showAdmin && (
+          <AdminDashboard
+            lang={lang}
+            onClose={() => setShowAdmin(false)}
+          />
+        )}
+      </div>
     </div>
   )
 }

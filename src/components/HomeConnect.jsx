@@ -3,13 +3,13 @@ import { Send, QrCode } from 'lucide-react'
 
 export default function HomeConnect({ theme }) {
   const isDark = theme === 'dark'
-  const bg      = isDark ? '#0D1117' : '#FAF9F6'
+  const bg      = isDark ? '#1F1F1F' : '#FAF9F6'
   const text    = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted   = isDark ? '#8B949E' : '#6B6860'
   const border  = isDark ? '#30363D' : '#E8E5DF'
-  const cardBg  = isDark ? '#161B22' : '#FFFFFF'
+  const cardBg  = isDark ? '#2D2D2D' : '#FFFFFF'
   const numColor= isDark ? '#8B949E' : '#D4C9B8'
-  const qrBg    = isDark ? '#161B22' : '#F4F2EE'
+  const qrBg    = isDark ? '#2D2D2D' : '#F4F2EE'
 
   const cfg = getConfig()
   const c = cfg.homeConnect || {}
@@ -28,13 +28,13 @@ export default function HomeConnect({ theme }) {
   const hasQr = wechatQr || gzhQr
 
   return (
-    <section id="connect" className="py-24 px-6" style={{ background: bg }}>
+    <section id="connect" className="py-24 px-6" style={{ background: isDark ? 'rgba(31,31,31,0.15)' : 'rgba(250,249,246,0.15)', position: 'relative', zIndex: 1 }}>
       <div className="max-w-3xl mx-auto">
 
         {/* 标题 */}
         <div className="mb-16">
           <span className="section-label">
-            <span className="text-2xl font-bold" style={{ color: numColor }}>06</span>
+            <span className="text-2xl font-bold" style={{ color: numColor }}>07</span>
             Connect
           </span>
           <h2 className="font-serif text-4xl md:text-5xl font-bold" style={{ color: text }}>

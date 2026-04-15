@@ -1,6 +1,6 @@
 import { getConfig } from '../lib/siteConfig'
 
-export default function HomeValues({ theme }) {
+export default function HomeOther({ theme }) {
   const isDark = theme === 'dark'
   const bg      = isDark ? '#1F1F1F' : '#F4F2EE'
   const text    = isDark ? '#E6EDF3' : '#1C1C1E'
@@ -9,56 +9,57 @@ export default function HomeValues({ theme }) {
   const cardBg  = isDark ? '#2D2D2D' : '#FFFFFF'
 
   const cfg = getConfig()
-  const v = cfg.homeValues || {}
-  const title = v.title || '我现在相信什么'
-  const items = v.items || []
+  const o = cfg.homeOther || {}
+  const title   = o.title   || '我的其他'
+  const items   = o.items   || [
+    { label: '座右铭',     value: '少工作，多赚钱，以书为粮，以路为行' },
+    { label: '喜欢的作家', value: '刘震云 · 史铁生' },
+    { label: '喜欢的明星', value: '邓超' },
+    { label: '喜欢宠物',   value: '狗' },
+  ]
 
   return (
-    <section className="py-24 px-6" style={{ background: bg }}>
+    <section className="py-24 px-6" style={{ background: isDark ? 'rgba(31,31,31,0.15)' : 'rgba(250,249,246,0.15)', position: 'relative', zIndex: 1 }}>
       <div className="max-w-3xl mx-auto">
 
         {/* 标题 */}
         <div className="mb-16">
           <span className="section-label">
-            <span className="text-2xl font-bold" style={{ color: isDark ? '#8B949E' : '#D4C9B8' }}>04</span>
-            What I Believe
+            <span className="text-2xl font-bold" style={{ color: isDark ? '#8B949E' : '#D4C9B8' }}>06</span>
+            Others
           </span>
           <h2
             className="font-serif text-4xl md:text-5xl font-bold"
-            style={{ color: isDark ? '#58A6FF' : text }}
+            style={{ color: text }}
           >
             {title}
           </h2>
           <div className="accent-bar mt-4" />
         </div>
 
-        {/* 价值观列表 */}
+        {/* 列表 */}
         <div className="space-y-3">
           {items.map((item, i) => (
             <div
               key={i}
+              className="flex items-start gap-6 p-5 rounded-2xl"
               style={{
                 background: cardBg,
                 border: `1px solid ${border}`,
-                borderRadius: '1rem',
-                padding: '1.5rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '1.25rem',
               }}
             >
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-serif font-bold text-lg"
+                className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
                 style={{ background: '#FEF3C7', color: '#D97706' }}
               >
                 {String(i + 1).padStart(2, '0')}
               </div>
               <div className="flex-1 pt-1">
-                <p
-                  className="text-base font-medium leading-relaxed"
-                  style={{ color: isDark ? '#58A6FF' : text }}
-                >
-                  {item.text}
+                <p className="text-xs mb-1" style={{ color: muted }}>
+                  {item.label}
+                </p>
+                <p className="text-base font-medium" style={{ color: text }}>
+                  {item.value}
                 </p>
               </div>
             </div>

@@ -43,13 +43,13 @@ function TypewriterText({ phrases }) {
 
 export default function Hero({ theme, lang }) {
   const isDark = theme === 'dark'
-  const bg       = isDark ? '#0D1117' : '#FAF9F6'
+  const bg       = isDark ? '#1F1F1F' : '#FAF9F6'
   const text     = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted    = isDark ? '#8B949E' : '#6B6860'
   const border   = isDark ? '#30363D' : '#E8E5DF'
-  const cardBg   = isDark ? '#161B22' : '#FFFFFF'
-  const btnBg    = isDark ? '#58A6FF' : '#1C1C1E'
-  const btnText  = isDark ? '#0D1117' : '#FFFFFF'
+  const cardBg   = isDark ? '#2D2D2D' : '#FFFFFF'
+  const btnBg    = isDark ? '#58A6FF' : '#2D2D2D'
+  const btnText  = isDark ? '#1F1F1F' : '#FFFFFF'
 
   const cfg = getConfig()
   const hero = cfg.hero || {}
@@ -64,11 +64,52 @@ export default function Hero({ theme, lang }) {
   ]
 
   return (
-    <section
-      className="relative flex items-center"
-      style={{ minHeight: '100dvh', paddingTop: '5rem', paddingBottom: '2rem', background: bg }}
-    >
+    <div className="relative">
+      {/* 半透明遮罩：让内容清晰 + 透出动态背景 */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: isDark
+            ? 'rgba(31,31,31,0.80)'
+            : 'rgba(250,249,246,0.80)',
+          zIndex: 0,
+        }}
+      />
+      <section
+        className="relative flex items-center"
+        style={{ minHeight: '100dvh', paddingTop: '5rem', paddingBottom: '2rem', zIndex: 1 }}
+      >
       <div className="relative z-10 w-full max-w-screen-xl mx-auto px-6">
+        {/* 顶部提示条 */}
+        <div
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full mb-10"
+          style={{
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)'}`,
+          }}
+        >
+          <span
+            style={{
+              color: '#D97706',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              letterSpacing: '0.02em',
+            }}
+          >
+            🔥 未来10年只研究
+          </span>
+          <span
+            style={{
+              color: '#D97706',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            1人+n个AI赚钱方法
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-12 lg:gap-16 items-center">
 
           {/* 左侧：头像 + 名字 + 小字 */}
@@ -140,5 +181,6 @@ export default function Hero({ theme, lang }) {
         </div>
       </div>
     </section>
+    </div>
   )
 }

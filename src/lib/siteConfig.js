@@ -62,8 +62,20 @@ async function loadConfig() {
 // 同步获取（使用缓存，不等待网络）
 export function getConfig() {
   if (cachedConfig) return cachedConfig
-  // 同步返回 localStorage 或默认，避免白屏
-  return getLocal() || { ...DEFAULT_CONFIG }
+  // 先读取 localStorage
+  const raw = getLocal()
+  // 如果有旧的不完整缓存，清除它
+  if (raw && (!raw.site || !raw.site.title)) {
+    localStorage.removeItem(STORAGE_KEY)
+    cachedConfig = { ...DEFAULT_CONFIG }
+  } else if (raw && raw.site && raw.site.title) {
+    // 完整的 localStorage 数据，和默认配置合并
+    cachedConfig = deepMerge({ ...DEFAULT_CONFIG }, raw)
+  } else {
+    // 没有 localStorage，直接用默认
+    cachedConfig = { ...DEFAULT_CONFIG }
+  }
+  return cachedConfig
 }
 
 // 保存配置：写入 localStorage + 服务器文件

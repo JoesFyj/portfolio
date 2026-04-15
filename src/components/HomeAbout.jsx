@@ -2,11 +2,11 @@ import { getConfig } from '../lib/siteConfig'
 
 export default function HomeAbout({ theme }) {
   const isDark = theme === 'dark'
-  const bg        = isDark ? '#0D1117' : '#FAF9F6'
+  const bg        = isDark ? '#1C1917' : '#FAF5EE'
   const text       = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted      = isDark ? '#8B949E' : '#6B6860'
-  const border     = isDark ? '#30363D' : '#E8E5DF'
-  const cardBg     = isDark ? '#161B22' : '#FFFFFF'
+  const border     = isDark ? '#2A2520' : '#E8E5DF'
+  const cardBg     = isDark ? '#292524' : '#FFFFFF'
   const numColor   = isDark ? '#8B949E' : '#D4C9B8'
 
   const cfg = getConfig()
@@ -21,7 +21,7 @@ export default function HomeAbout({ theme }) {
   ]
 
   return (
-    <section className="py-24 px-6" style={{ background: bg }}>
+    <section className="py-24 px-6" style={{ background: isDark ? 'rgba(28,25,23,0.15)' : 'rgba(250,245,238,0.15)', position: 'relative', zIndex: 1 }}>
       <div className="max-w-3xl mx-auto">
 
         {/* 标题 */}

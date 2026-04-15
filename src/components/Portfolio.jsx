@@ -3,7 +3,7 @@ import { ExternalLink, ArrowRight } from 'lucide-react'
 
 export default function Portfolio({ theme }) {
   const isDark = theme === 'dark'
-  const bg      = isDark ? '#0D1117' : '#FAF9F6'
+  const bg      = isDark ? '#1F1F1F' : '#FAF9F6'
   const text    = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted   = isDark ? '#8B949E' : '#6B6860'
   const border  = isDark ? '#30363D' : '#E8E5DF'
@@ -16,13 +16,13 @@ export default function Portfolio({ theme }) {
   const subtitle = p.subtitle || '公众号持续更新中'
 
   return (
-    <section className="py-24 px-6" style={{ background: bg }}>
+    <section className="py-24 px-6" style={{ background: isDark ? 'rgba(31,31,31,0.15)' : 'rgba(250,249,246,0.15)', position: 'relative', zIndex: 1 }}>
       <div className="max-w-3xl mx-auto">
 
         {/* 标题 */}
         <div className="mb-16">
           <span className="section-label">
-            <span className="text-2xl font-bold" style={{ color: numColor }}>03</span>
+            <span className="text-2xl font-bold" style={{ color: numColor }}>04</span>
             Writing
           </span>
           <h2
