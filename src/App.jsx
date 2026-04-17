@@ -5,6 +5,7 @@ import DynamicBg from './components/DynamicBg'
 import Home from './pages/Home'
 import Hub from './pages/Hub'
 import HubOps from './pages/HubOps'
+import PageGenerator from './pages/PageGenerator'
 import AdminDashboard from './components/AdminDashboard'
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/" element={<Home lang={lang} theme={theme} />} />
           <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
           <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
+          <Route path="/gen" element={<PageGenerator />} />
         </Routes>
         {showAdmin && (
           <AdminDashboard

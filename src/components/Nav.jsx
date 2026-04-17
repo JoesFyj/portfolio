@@ -28,6 +28,7 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
     { to: '/',        label: isZh ? '首页' : 'Home' },
     { to: '/hub',     label: isZh ? '龙虾内容创作' : 'Self Media' },
     { to: '/hub/ops', label: isZh ? '龙虾运营中心' : 'Operations' },
+    { to: '/gen',     label: isZh ? '网页生成器' : 'Page Generator' },
   ]
 
   return (
