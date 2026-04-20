@@ -132,8 +132,25 @@ export default async function handler(req, res) {
     if (action === 'tts') {
       const { text } = req.body
       if (!text || text.length < 10) return res.status(400).json({ error: '内容太短' })
-      // 前端使用 TTS 工具，这里只返回确认
       return res.status(200).json({ text_length: text.length, hint: '前端使用 TTS 工具生成音频' })
+    }
+
+    // ============ 多平台文案格式化 ============
+    if (action === 'format_content') {
+      const { content, title, platforms } = fields
+      if (!content) return res.status(400).json({ error: '内容不能为空' })
+
+      const wechatContent = `【${title}】\n\n${content.split('\n').filter(l => l.trim()).map(l => l.trim()).join('\n\n')}`
+      const emojis = ['💡', '🌿', '📖', '✨', '🔥', '💪', '🎯', '🧠']
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)]
+      const xhsContent = `${emoji} ${title}\n\n${
+        content.split('\n').filter(l => l.trim()).slice(0, 8).map(l => l.trim().substring(0, 150)).join('\n\n')
+      }\n\n# WaytoAGI # 个人成长 # 自媒体 # 小福老师`
+
+      const result = {}
+      if (platforms?.includes('wechat')) result.wechat = wechatContent
+      if (platforms?.includes('xhs')) result.xhs = xhsContent
+      return res.status(200).json(result)
     }
 
     return res.status(400).json({ error: '未知action: ' + action })
