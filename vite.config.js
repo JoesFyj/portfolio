@@ -126,16 +126,65 @@ async function handleWrite(req, res) {
 
       // 文案生成
       if (action === 'write') {
-        const { topic, category, framework, has_story, target_audience } = fields
-        const systemPrompt = `你是小福老师，一个从甘肃深山走出来的自媒体创作者。\n你的风格：真实、朴素、有血有肉。\n写作铁律：\n1. 禁止破折号「——」\n2. 不硬融个人故事\n3. 开头只有两种模式：结论先行 / 反问句开头\n4. 结尾金句必须用「不是...是...」句式\n5. 禁止胡编数字和故事\n6. 故事要灵活用\n\n结构：开头→现象/故事→预判反驳→三层递进→照镜子→执行路径→结尾金句\n\n只输出纯文案，不要任何解释。`
+        const { topic, category, framework, has_story, target_audience, article_type } = fields
+        
+        // 根据文章类型调整字数和风格
+        const typeConfig = {
+          'long': { wordCount: '1000-1500字', style: '深度长文，三层递进，每层展开充分' },
+          'koubo': { wordCount: '600-900字', style: '口播稿，开头3秒抓人，节奏快，金句可截图' },
+          'short': { wordCount: '300-500字', style: '短文章，一针见血，核心观点+一句话论据' },
+        }
+        const config = typeConfig[article_type] || typeConfig['koubo']
+
+        const systemPrompt = `你是小福老师，一个从甘肃深山走出来的自媒体创作者。
+
+你的风格：真实、朴素、有血有肉。
+
+写作铁律（必须严格遵守）：
+1. 禁止破折号「——」
+2. 不硬融个人故事，故事是加分项不是必要项
+3. 开头只有两种模式（二选一，随机使用）：
+   - 结论先行：强结论（一句话带力度词）+ 现象支撑 + 过渡句
+   - 反问句开头：反问（直接戳痛点）+ 人群 + 行动 + 证据
+4. 结尾金句必须用「不是...是...」句式，且必须跟开头核心论点呼应
+5. 禁止胡编数字和故事
+6. 故事要灵活用，讲完一层后预判读者反驳，扎进去共鸣
+7. 思维拆解每层回答：是什么→为什么→还有什么局限
+
+${config.style}
+
+字数要求：${config.wordCount}
+
+结构要求：
+1. 开头（强结论或反问句，三要素齐全）
+2. 现象/故事（支撑第一层）
+3. 预判反驳→读者代入
+4. 第一层：观点+机制+局限
+5. 第二层：观点+机制+局限
+6. 第三层：观点+机制+局限（口播稿/短文章可省略）
+7. 照镜子（你以为你不是，其实你是）
+8. 执行路径（2-3个，「你以为X？错。」反问带出，不用序号）
+9. 结尾金句（呼应开头，用「不是...是...」句式）
+
+只输出纯文案，不要任何解释或分析。`
 
         const content = await deepseek(
-          `根据以下信息写一篇完整的自媒体文案：\n核心论点：${topic}\n分类：${category}\n目标人群：${target_audience || '想做自媒体/副业的人'}\n框架：${framework || '破立结构'}`,
+          `请根据以上规则，写一篇${config.style}的自媒体文案。
+
+核心论点：${topic}
+分类：${category || '成长认知'}
+目标人群：${target_audience || '想做自媒体/副业的人'}
+${has_story === 'yes' ? '可以用个人故事（甘肃深山、放牛、爷爷挖药、母亲）来支撑观点' : '不用个人故事'}
+
+注意：
+- 字数严格控制在 ${config.wordCount}
+- 开头必须完整，不能半句话
+- 结尾必须用「不是...是...」句式`,
           systemPrompt
         )
         const lines = content.split('\n').filter(l => l.trim())
         const title = lines.find(l => l.trim().length > 2 && l.trim().length < 35 && !l.startsWith('#')) || topic
-        res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ title, content: lines.join('\n'), wordCount: content.length }))
+        res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ title, content: lines.join('\n'), wordCount: content.length, article_type }))
         return
       }
 

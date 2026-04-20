@@ -18,7 +18,7 @@ const STEPS = [
 
 const INITIAL_STATE = {
   topic:   { status: 'idle', topicList: [], selectedTopic: '', selectedRecordId: '', selectedCategory: '' },
-  write:   { status: 'idle', title: '', content: '', wordCount: 0 },
+  write:   { status: 'idle', title: '', content: '', wordCount: 0, articleType: 'koubo' },
   cover:   { status: 'stub', hint: '点击生成封面图（暂未实现）' },
   wechat:  { status: 'stub', content: '' },
   xhs:     { status: 'stub', content: '' },
@@ -86,6 +86,7 @@ export default function SelfMedia({ lang, theme }) {
   // ---- 文案 ----
   async function generateWrite() {
     const { selectedTopic, selectedCategory } = states.topic
+    const { articleType } = states.write
     if (!selectedTopic) return
     setStates(prev => ({ ...prev, write: { ...prev.write, status: 'loading', error: '' } }))
     try {
@@ -94,17 +95,28 @@ export default function SelfMedia({ lang, theme }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'write',
-          fields: { topic: selectedTopic, category: selectedCategory || '成长认知', framework: '破立结构', has_story: 'no', target_audience: '想做自媒体/副业的人' },
+          fields: { 
+            topic: selectedTopic, 
+            category: selectedCategory || '成长认知', 
+            framework: '破立结构', 
+            has_story: 'no', 
+            target_audience: '想做自媒体/副业的人',
+            article_type: articleType,
+          },
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '生成失败')
-      setStates(prev => ({ ...prev, write: { status: 'done', title: data.title, content: data.content, wordCount: data.wordCount, error: '' } }))
+      setStates(prev => ({ ...prev, write: { status: 'done', title: data.title, content: data.content, wordCount: data.wordCount, articleType, error: '' } }))
       // 自动格式化多平台文案
       await formatForPlatforms(data.title, data.content)
     } catch (e) {
       setStates(prev => ({ ...prev, write: { ...prev.write, status: 'idle', error: e.message } }))
     }
+  }
+
+  function setArticleType(type) {
+    setStates(prev => ({ ...prev, write: { ...prev.write, articleType: type } }))
   }
 
   // ---- 多平台格式化 ----
@@ -275,15 +287,34 @@ export default function SelfMedia({ lang, theme }) {
                 </div>
               ))}
               {states.topic.selectedTopic && (
-                <div className="flex gap-2 mt-3">
-                  <button onClick={generateWrite} disabled={states.write.status === 'loading'}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                    style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
-                    {states.write.status === 'loading' ? <Loader size={13} className="animate-spin" /> : <Lightbulb size={13} />}
-                    {states.write.status === 'loading' ? '生成中...' : '生成文案'}
-                  </button>
-                  <button onClick={() => goBackTo('topic')}
-                    className="px-3 py-2 rounded-xl text-xs" style={{ color: muted, border: `1px solid ${cardBorder}` }}>重新选择</button>
+                <div className="space-y-3 mt-3">
+                  {/* 文章类型选择 */}
+                  <div className="text-xs" style={{ color: muted }}>选择文章类型：</div>
+                  <div className="flex gap-2">
+                    {[
+                      { key: 'koubo', label: '口播稿', desc: '600-900字，节奏快，适合视频' },
+                      { key: 'long', label: '长文章', desc: '1000-1500字，深度展开' },
+                      { key: 'short', label: '短文章', desc: '300-500字，一针见血' },
+                    ].map(t => (
+                      <button key={t.key} onClick={() => setArticleType(t.key)}
+                        className="flex-1 py-2.5 px-3 rounded-xl text-xs font-medium border transition-all"
+                        style={states.write.articleType === t.key
+                          ? { background: 'rgba(217,119,6,0.15)', borderColor: 'rgba(217,119,6,0.4)', color: '#D97706' }
+                          : { borderColor: cardBorder, color: muted }}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={generateWrite} disabled={states.write.status === 'loading'}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
+                      {states.write.status === 'loading' ? <Loader size={13} className="animate-spin" /> : <Lightbulb size={13} />}
+                      {states.write.status === 'loading' ? '生成中...' : '生成文案'}
+                    </button>
+                    <button onClick={() => goBackTo('topic')}
+                      className="px-3 py-2 rounded-xl text-xs" style={{ color: muted, border: `1px solid ${cardBorder}` }}>重新选择</button>
+                  </div>
                 </div>
               )}
             </div>
@@ -409,17 +440,24 @@ function StepContent({ step, state, text, muted, cardBg, cardBorder, inputBg, wr
 
   switch (step) {
     case 'write':
+      const typeLabels = { koubo: '口播稿', long: '长文章', short: '短文章' }
       return (
         <div className="space-y-3">
+          <div className="flex gap-2">
+            <span className="text-xs px-2 py-1 rounded-md" style={{ background: 'rgba(217,119,6,0.1)', color: '#D97706' }}>
+              {typeLabels[state.articleType] || '口播稿'}
+            </span>
+            <span className="text-xs px-2 py-1 rounded-md" style={{ background: inputBg, border: `1px solid ${cardBorder}`, color: muted }}>
+              {state.wordCount || 0} 字
+            </span>
+          </div>
           <div className="p-3 rounded-xl" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
             <div className="text-xs mb-1" style={{ color: muted }}>文章标题</div>
             <div className="text-sm font-semibold" style={{ color: text }}>{state.title || '—'}</div>
           </div>
           <div>
-            <div className="flex justify-between text-xs mb-1" style={{ color: muted }}>
-              <span>正文内容</span><span>{state.wordCount || 0} 字</span>
-            </div>
-            <div className="p-3 rounded-xl max-h-52 overflow-y-auto" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
+            <div className="text-xs mb-1" style={{ color: muted }}>正文内容</div>
+            <div className="p-3 rounded-xl max-h-60 overflow-y-auto" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
               <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: muted }}>{state.content}</div>
             </div>
           </div>
