@@ -22,32 +22,64 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-function drawTitle(ctx, text, chars, cw, titleY, progress) {
-  const shown = text.slice(0, chars)
+function drawTitle(ctx, text, chars, cw, centerY, topY, slideProg) {
+  if (!text || chars <= 0) return
   ctx.save()
+
+  const y = centerY + (topY - centerY) * slideProg
+
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  const fontSize = Math.round(cw * 0.038)
-  const x = cw / 2
+  const fontSize = Math.round(cw * 0.048)
 
-  const grad = ctx.createLinearGradient(x - cw * 0.2, 0, x + cw * 0.2, 0)
-  GRAD.forEach((c, i) => grad.addColorStop(i / (GRAD.length - 1), c))
+  const grad = ctx.createLinearGradient(cw * 0.3, 0, cw * 0.7, 0)
+  grad.addColorStop(0, '#06b6d4')
+  grad.addColorStop(0.5, '#8b5cf6')
+  grad.addColorStop(1, '#ec4899')
 
   ctx.font = `900 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`
-  ctx.fillStyle = grad
-  ctx.shadowColor = 'rgba(139,92,246,0.5)'
-  ctx.shadowBlur = cw * 0.025
-  ctx.fillText(shown, x, titleY)
-  ctx.shadowBlur = 0
 
-  if (chars < text.length) {
-    const metrics = ctx.measureText(shown)
-    const cursorX = x + metrics.width / 2 + cw * 0.004
-    const alpha = progress < 0.5 ? 1 : 0
-    ctx.globalAlpha = alpha
-    ctx.fillStyle = '#D97706'
-    ctx.fillRect(cursorX, titleY - fontSize * 0.42, cw * 0.003, fontSize * 0.85)
+  const fullW = ctx.measureText(text).width
+  const startX = cw / 2 - fullW / 2
+
+  ctx.shadowColor = 'rgba(139,92,246,0.55)'
+  ctx.shadowBlur = cw * 0.032
+  ctx.fillStyle = grad
+
+  const doneChars = Math.min(text.length, Math.max(0, chars - 1))
+  if (doneChars > 0) {
+    ctx.fillText(text.slice(0, doneChars), cw / 2, y)
   }
+
+  // 当前字：强力弹性弹出
+  if (chars <= text.length) {
+    const lastChar = text[chars - 1]
+    const prevText = text.slice(0, doneChars)
+    const prevW = doneChars > 0 ? ctx.measureText(prevText).width : 0
+    const lastW = ctx.measureText(lastChar).width
+    const lastX = startX + prevW + lastW / 2
+
+    // 弹出进度：每个字出现后弹 300ms
+    const charProg = 1 // 每字180ms，刚出现时直接画
+    const scale = 1.5 - charProg * 0.5 // 刚出现时1.5倍，逐渐回到1倍
+
+    ctx.save()
+    ctx.translate(lastX, y)
+    ctx.scale(scale, scale)
+    ctx.translate(-lastX, -y)
+    ctx.fillText(lastChar, startX + prevW, y)
+    ctx.restore()
+
+    // 闪光
+    ctx.globalAlpha = 0.35
+    ctx.fillStyle = '#ffffff'
+    ctx.shadowBlur = 0
+    ctx.beginPath()
+    ctx.arc(lastX, y, fontSize * 0.55, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  ctx.shadowBlur = 0
   ctx.restore()
 }
 
@@ -323,21 +355,23 @@ class AnimEngine {
 
   getTimings() {
     const titleLen = this.data.title.length
-    const titleEnd = 50 + titleLen * 100
-    const gridAppear = titleEnd + 300
-    const cellGap = 2000
+    const titleEnd = 50 + titleLen * 180
+    const slideStart = titleEnd
+    const slideEnd = titleEnd + 600
+    const gridAppear = slideEnd + 100
     const partGap = 600
+    const cellGap = partGap * 2 + 400
     const cells = this.data.points.map((_, i) => ({
       label: gridAppear + i * cellGap,
       short: gridAppear + i * cellGap + partGap,
-      desc: gridAppear + cellGap + i * cellGap + partGap * 2,
+      desc:  gridAppear + i * cellGap + partGap * 2,
     }))
     const meltStart = cells[cells.length - 1].desc + 1200
     const expDur = 1200
     const sloganDur = 2500
     const endHold = 2200
     const total = meltStart + expDur + sloganDur + endHold
-    return { titleEnd, gridAppear, cells, meltStart, expDur, sloganDur, endHold, total }
+    return { titleEnd, slideStart, slideEnd, gridAppear, cells, meltStart, expDur, sloganDur, endHold, total }
   }
 
   updateCellStates(now) {
@@ -355,11 +389,14 @@ class AnimEngine {
     if (this.done) return
     if (!this.startTime) this.startTime = now
     const t = now - this.startTime
-    const { gridAppear, cells, meltStart, expDur, sloganDur, endHold, total } = this.getTimings()
+    const { titleEnd, slideStart, slideEnd, gridAppear, cells, meltStart, expDur, sloganDur, endHold, total } = this.getTimings()
     const { ctx, cw, ch } = this
 
     const prog = Math.min(1, t / total)
     this.onProgress(Math.round(prog * 88))
+
+    const centerY = ch * 0.38
+    const topY = ch * 0.065
 
     if (t >= meltStart) {
       const expProg = Math.min(1, (t - meltStart) / expDur)
@@ -393,11 +430,21 @@ class AnimEngine {
     ctx.fillStyle = glowGrad
     ctx.fillRect(0, 0, cw, ch)
 
-    const titleChars = Math.min(this.data.title.length, Math.floor(Math.max(0, t - 50) / 100) + 1)
-    this.gridVisible = t >= gridAppear
-    drawTitle(ctx, this.data.title, titleChars, cw, this.titleY, (t / 500) % 1)
+    const titleChars = Math.min(this.data.title.length + 1, Math.floor(Math.max(0, t - 50) / 180) + 1)
 
-    if (this.gridVisible) {
+    // 标题滑动进度：打字结束后从 centerY 滑到 topY
+    let slideProg = 0
+    if (t > slideEnd) slideProg = 1
+    else if (t > slideStart) {
+      const sp = (t - slideStart) / (slideEnd - slideStart)
+      // ease out cubic
+      slideProg = 1 - Math.pow(1 - sp, 3)
+    }
+
+    drawTitle(ctx, this.data.title, titleChars, cw, centerY, topY, slideProg)
+
+    const gridVisible = t >= gridAppear
+    if (gridVisible) {
       const lineOp = Math.min(1, (t - gridAppear) / 400)
       ctx.save()
       ctx.globalAlpha = lineOp * 0.4
@@ -405,13 +452,13 @@ class AnimEngine {
       ctx.lineWidth = 1
       ctx.setLineDash([cw * 0.01, cw * 0.015])
       ctx.beginPath()
-      ctx.moveTo(cw * 0.1, this.gridTop - cw * 0.015)
-      ctx.lineTo(cw * 0.9, this.gridTop - cw * 0.015)
+      ctx.moveTo(cw * 0.1, topY + cw * 0.06)
+      ctx.lineTo(cw * 0.9, topY + cw * 0.06)
       ctx.stroke()
       ctx.restore()
     }
 
-    if (this.gridVisible) {
+    if (gridVisible) {
       const gridOp = Math.min(1, (t - gridAppear) / 400)
       drawDashedGrid(ctx, cw, ch, this.cols, this.rows, gridOp)
     }
@@ -419,8 +466,9 @@ class AnimEngine {
     this.updateCellStates(now)
     const pad = cw * 0.03
     const gap = cw * 0.015
+    const gridTop = topY + cw * 0.085
     const gridW = cw - pad * 2
-    const gridH = this.gridBottom - this.gridTop
+    const gridH = ch * 0.97 - gridTop
     const cellW = (gridW - gap * (this.cols - 1)) / this.cols
     const cellH = (gridH - gap * (this.rows - 1)) / this.rows
 
@@ -428,7 +476,7 @@ class AnimEngine {
       const col = i % this.cols
       const row = Math.floor(i / this.cols)
       const cx2 = pad + col * (cellW + gap)
-      const cy2 = this.gridTop + row * (cellH + gap)
+      const cy2 = gridTop + row * (cellH + gap)
       const color = COLORS[i % COLORS.length]
 
       if (t >= cells[i].label) {
@@ -611,13 +659,14 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
     setStatus('recording')
 
     const n = data.points.length
-    const titleEnd = 50 + data.title.length * 100
-    const gridAppear = titleEnd + 300
-    const cellGap = 2000, partGap = 600
+    const titleEnd = 50 + data.title.length * 180
+    const slideEnd = titleEnd + 600
+    const gridAppear = slideEnd + 100
+    const cellGap = 1600, partGap = 600
     const cs = data.points.map((_, i) => ({
       label: gridAppear + i * cellGap,
       short: gridAppear + i * cellGap + partGap,
-      desc: gridAppear + cellGap + i * cellGap + partGap * 2,
+      desc:  gridAppear + i * cellGap + partGap * 2,
     }))
     const meltStart = cs[cs.length - 1].desc + 1200
 
