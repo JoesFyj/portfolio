@@ -3,28 +3,28 @@ import {
   Rss, Image, Share2, Database,
   Play, CheckCircle, Loader,
   ChevronRight, Sparkles, Edit3, Volume2,
-  RotateCcw, Lightbulb
+  RotateCcw, Lightbulb, ExternalLink
 } from 'lucide-react'
 
 const STEPS = [
-  { key: 'topic',   label: '选题',    icon: Sparkles, desc: '确定文章主题' },
-  { key: 'write',   label: '文案',    icon: Edit3,    desc: '生成完整文章' },
+  { key: 'topic',   label: '选题',    icon: Sparkles, desc: '从选题库读取' },
+  { key: 'write',   label: '文案',    icon: Edit3,    desc: 'AI生成完整文章' },
   { key: 'cover',   label: '封面',    icon: Image,    desc: '生成封面图' },
-  { key: 'wechat',  label: '公众号',  icon: Rss,      desc: '推送至公众号' },
-  { key: 'xhs',     label: '小红书',  icon: Share2,   desc: '推送至小红书' },
-  { key: 'bitable', label: '多维表',  icon: Database, desc: '录入多维表' },
+  { key: 'bitable', label: '多维表',  icon: Database, desc: '录入飞书多维表' },
   { key: 'audio',   label: '音频',    icon: Volume2,  desc: '生成播报音频' },
 ]
 
 const INITIAL_STATE = {
-  topic:   { status: 'idle', mode: 'manual', topicText: '', topicList: [], selectedTopic: '' },
-  write:   { status: 'idle', title: '', content: '', wordCount: 0 },
-  cover:   { status: 'idle', wechatUrl: '', xhsUrl: '' },
-  wechat:  { status: 'idle', draftUrl: '' },
-  xhs:     { status: 'idle', draftUrl: '' },
-  bitable: { status: 'idle', recordId: '' },
-  audio:   { status: 'idle', audioUrl: '', duration: 0 },
+  topic:   { status: 'idle', topicList: [], selectedTopic: '', selectedRecordId: '', selectedCategory: '', loading: false, error: '' },
+  write:   { status: 'idle', title: '', content: '', wordCount: 0, loading: false, error: '' },
+  cover:   { status: 'idle', loading: false, hint: '封面生成功能开发中' },
+  bitable: { status: 'idle', recordId: '', loading: false, error: '', url: 'https://feishu.cn/base/T9GPbvSvyanRwrsSaHjc2m0Wnle?table=tblCpFs6xT8pIkQT' },
+  audio:   { status: 'idle', loading: false, hint: '点击下方按钮使用 TTS 工具生成音频' },
 }
+
+// 选题库配置
+const TOPIC_APP_TOKEN = 'MGXMbPcpTaVDvVsHHNPcaC1gnwc'
+const TOPIC_TABLE_ID  = 'tbljjgug9g0gQO2r'
 
 export default function SelfMedia({ lang, theme }) {
   const isDark = theme === 'dark'
@@ -45,8 +45,6 @@ export default function SelfMedia({ lang, theme }) {
 
   const [states, setStates] = useState(INITIAL_STATE)
   const [expandedStep, setExpandedStep] = useState('topic')
-  const [topicMode, setTopicMode] = useState('manual')
-  const [topicText, setTopicText] = useState('')
 
   function isDone(key) { return states[key].status === 'done' }
   function isActive(key) { return expandedStep === key }
@@ -59,42 +57,99 @@ export default function SelfMedia({ lang, theme }) {
   const completedCount = STEPS.filter(s => isDone(s.key)).length
   const progress = Math.round((completedCount / STEPS.length) * 100)
 
-  async function runStep(stepKey) {
-    setStates(prev => ({ ...prev, [stepKey]: { ...prev[stepKey], status: 'loading' } }))
-    setExpandedStep(stepKey)
-    await new Promise(r => setTimeout(r, 1800))
-
-    const topic = states.topic
-    const results = {
-      topic: {
-        status: 'done', mode: topicMode, topicText,
-        topicList: topicMode === 'auto' ? [
-          '我在AI浪潮里，反而把手机放下了',
-          '被AI控住的三年，没人告诉的真相',
-          '从田埂到书桌：我的AI自媒体之路',
-        ] : [],
-        selectedTopic: topicMode === 'auto' ? '我在AI浪潮里，反而把手机放下了' : topicText || '我在AI浪潮里，反而把手机放下了',
-      },
-      write: {
-        status: 'done',
-        title: topic.selectedTopic || '我在AI浪潮里，反而把手机放下了',
-        content: `三年前，我买了一套自媒体课。每天花4小时在手机上——找选题、刷同行、剪视频、回复评论。结果账号没做起来，眼睛越来越差，脾气越来越躁。
-
-后来我才明白：不是AI没用，是我自己用错了方法。
-
-一年后重新开始。不追热点，不日更，不研究算法。只做一件事：让AI帮我写，我负责想。每天两小时，写一篇。三个月后，阅读量稳定在三四千。
-
-AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来的时间，我用来读书、跑步、陪家人。`,
-        wordCount: 186,
-      },
-      cover:   { status: 'done', wechatUrl: '/cover_wechat.jpg', xhsUrl: '/cover_xhs.jpg' },
-      wechat:  { status: 'done', draftUrl: 'https://mp.weixin.qq.com' },
-      xhs:     { status: 'done', draftUrl: 'https://creator.xiaohongshu.com' },
-      bitable: { status: 'done', recordId: 'recvg42Y5oGHuv' },
-      audio:   { status: 'done', audioUrl: '/ai_news_final.mp3', duration: 210 },
+  // ========== 选题 ==========
+  async function loadTopics() {
+    setStates(prev => ({ ...prev, topic: { ...prev.topic, status: 'loading', error: '' } }))
+    try {
+      const res = await fetch('/api/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'list_topics',
+          fields: { app_token: TOPIC_APP_TOKEN, table_id: TOPIC_TABLE_ID },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '读取选题库失败')
+      setStates(prev => ({
+        ...prev,
+        topic: { ...prev.topic, status: 'done', topicList: data.items || [], error: '' },
+      }))
+    } catch (e) {
+      setStates(prev => ({ ...prev, topic: { ...prev.topic, status: 'idle', error: e.message } }))
     }
+  }
 
-    setStates(prev => ({ ...prev, [stepKey]: { ...prev[stepKey], ...results[stepKey] } }))
+  function selectTopic(item) {
+    setStates(prev => ({
+      ...prev,
+      topic: { ...prev.topic, selectedTopic: item.title, selectedRecordId: item.record_id, selectedCategory: item.category },
+    }))
+  }
+
+  // ========== 文案生成 ==========
+  async function generateWrite() {
+    const topic = states.topic
+    if (!topic.selectedTopic) return
+    setStates(prev => ({ ...prev, write: { ...prev.write, status: 'loading', error: '' } }))
+    try {
+      const res = await fetch('/api/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'write',
+          fields: {
+            topic: topic.selectedTopic,
+            category: topic.selectedCategory || '成长认知',
+            framework: '破立结构',
+            has_story: 'no',
+            target_audience: '想做自媒体/副业的人',
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '生成失败')
+      setStates(prev => ({
+        ...prev,
+        write: { status: 'done', title: data.title, content: data.content, wordCount: data.wordCount, error: '' },
+      }))
+    } catch (e) {
+      setStates(prev => ({ ...prev, write: { ...prev.write, status: 'idle', error: e.message } }))
+    }
+  }
+
+  // ========== 录入多维表 ==========
+  async function saveToBitable() {
+    const write = states.write
+    const topic = states.topic
+    if (!write.content) return
+    setStates(prev => ({ ...prev, bitable: { ...prev.bitable, status: 'loading', error: '' } }))
+    try {
+      const res = await fetch('/api/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_to_bitable',
+          fields: {
+            title: write.title,
+            content: write.content,
+            category: topic.selectedCategory || '成长认知',
+            platform: ['抖音'],
+            framework: '破立结构',
+            word_count: write.wordCount,
+            topic_record_id: topic.selectedRecordId || '',
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '录入失败')
+      setStates(prev => ({
+        ...prev,
+        bitable: { status: 'done', recordId: data.record_id || '已录入', error: '', url: prev.bitable.url },
+      }))
+    } catch (e) {
+      setStates(prev => ({ ...prev, bitable: { ...prev.bitable, status: 'idle', error: e.message } }))
+    }
   }
 
   function goBackTo(key) {
@@ -111,7 +166,6 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
   function resetAll() {
     setStates(INITIAL_STATE)
     setExpandedStep('topic')
-    setTopicText('')
   }
 
   return (
@@ -125,13 +179,13 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
             Self Media
           </span>
           <h2 className="font-serif text-4xl md:text-5xl font-bold" style={{ color: text }}>
-            内容创作中心
+            {isZh ? '内容创作中心' : 'Content Creation Hub'}
           </h2>
-          <p className="mt-2 text-sm" style={{ color: muted }}>分步执行 · 内容可见 · 可返回重做</p>
+          <p className="mt-2 text-sm" style={{ color: muted }}>{isZh ? '真实链路 · 每步可见 · 可返回重做' : 'Real pipeline · Visible steps · Redo available'}</p>
           <div className="accent-bar mt-4" />
         </div>
 
-        {/* 进度条卡片 */}
+        {/* 进度条 */}
         <div style={cs({ padding: '1.25rem', marginBottom: '2rem' })}>
           <div className="flex justify-between text-xs mb-3">
             <span style={{ color: muted }}>发布流水线</span>
@@ -141,17 +195,14 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
             <div className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress}%`, background: 'linear-gradient(to right, #D97706, #F59E0B)' }} />
           </div>
-
-          {/* 步骤图标 */}
           <div className="flex items-center justify-between mt-4 overflow-x-auto">
             {STEPS.map((step, i) => {
               const done = isDone(step.key)
               const active = expandedStep === step.key
-              const iconBg = done ? 'rgba(217,119,6,0.2)' : active ? 'rgba(217,119,6,0.1)' : stepIdle
+              const iconBg  = done ? 'rgba(217,119,6,0.2)' : active ? 'rgba(217,119,6,0.1)' : stepIdle
               const iconBdr = done ? 'rgba(217,119,6,0.4)' : active ? 'rgba(217,119,6,0.3)' : stepBdr
               const iconCol = done || active ? '#D97706' : muted
               const lblCol  = done ? 'rgba(217,119,6,0.7)' : active ? muted : mutedLight
-
               return (
                 <div key={step.key} className="flex items-center min-w-0">
                   <div className="flex flex-col items-center gap-1 px-1">
@@ -171,7 +222,7 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
           </div>
         </div>
 
-        {/* 选题区 */}
+        {/* 步骤1: 选题 */}
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-5 h-5 rounded-lg flex items-center justify-center"
@@ -182,70 +233,87 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
             {isDone('topic') && <CheckCircle size={13} style={{ color: '#22C55E' }} />}
           </div>
 
-          {states.topic.status === 'idle' && (
-            <div className="flex gap-2 mb-3">
-              {[{ key: 'manual', zh: '手动输入' }, { key: 'auto', zh: 'AI 自动选题' }].map(({ key, zh }) => (
-                <button key={key} onClick={() => setTopicMode(key)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all"
-                  style={topicMode === key
-                    ? { background: 'rgba(217,119,6,0.15)', borderColor: 'rgba(217,119,6,0.4)', color: '#D97706' }
-                    : { borderColor: cardBorder, color: muted }
-                  }>
-                  {zh}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {topicMode === 'manual' && states.topic.status === 'idle' && (
-            <div>
-              <textarea
-                value={topicText}
-                onChange={e => setTopicText(e.target.value)}
-                placeholder="输入文章主题或方向..."
-                rows={3}
-                className="w-full rounded-xl px-4 py-3 text-sm resize-none transition-colors"
-                style={{ background: inputBg, border: `1px solid ${cardBorder}`, color: text, outline: 'none', fontFamily: "'DM Sans', system-ui, sans-serif" }}
-              />
-              <div className="flex justify-end mt-2">
-                <button onClick={() => runStep('topic')} disabled={!topicText.trim()}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                  style={topicText.trim()
-                    ? { background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }
-                    : { opacity: 0.4, color: muted, cursor: 'not-allowed', border: `1px solid ${cardBorder}` }
-                  }>
-                  <Lightbulb size={13} />
-                  确定选题
-                </button>
-              </div>
-            </div>
-          )}
-
-          {topicMode === 'auto' && states.topic.status === 'idle' && (
-            <button onClick={() => runStep('topic')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+          {states.topic.status === 'idle' && !states.topic.error && (
+            <button onClick={loadTopics}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
               <Sparkles size={13} />
-              让 AI 帮我选题
+              从选题库读取候选选题
             </button>
           )}
 
-          {(states.topic.status === 'loading' || states.topic.status === 'done') && (
-            <div className="mt-1">
-              {states.topic.status === 'loading' && (
-                <div className="flex items-center gap-2 py-3 text-sm" style={{ color: '#3B82F6' }}>
-                  <Loader size={13} className="animate-spin" />
-                  AI 选题中...
+          {states.topic.status === 'loading' && (
+            <div className="flex items-center gap-2 py-3 text-sm" style={{ color: '#3B82F6' }}>
+              <Loader size={13} className="animate-spin" />
+              读取选题库中...
+            </div>
+          )}
+
+          {states.topic.error && (
+            <div className="p-3 rounded-xl text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444' }}>
+              读取失败：{states.topic.error}
+              <button onClick={loadTopics} className="ml-3 underline">重试</button>
+            </div>
+          )}
+
+          {states.topic.status === 'done' && states.topic.topicList.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs" style={{ color: muted }}>
+                共 {states.topic.topicList.length} 个候选选题，点击选择：
+              </div>
+              {states.topic.topicList.map(item => (
+                <div key={item.record_id}
+                  onClick={() => selectTopic(item)}
+                  className="p-3 rounded-xl cursor-pointer transition-all"
+                  style={{
+                    border: `1px solid ${states.topic.selectedRecordId === item.record_id ? 'rgba(217,119,6,0.5)' : cardBorder}`,
+                    background: states.topic.selectedRecordId === item.record_id ? 'rgba(217,119,6,0.08)' : inputBg,
+                  }}>
+                  <div className="flex items-start gap-2">
+                    <div className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5"
+                      style={states.topic.selectedRecordId === item.record_id
+                        ? { borderColor: '#D97706', background: 'rgba(217,119,6,0.2)' }
+                        : { borderColor: cardBorder }}>
+                      {states.topic.selectedRecordId === item.record_id && (
+                        <CheckCircle size={10} style={{ color: '#D97706' }} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium" style={{ color: text }}>{item.title}</div>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-xs px-1.5 py-0.5 rounded"
+                          style={{ background: 'rgba(217,119,6,0.1)', color: '#D97706' }}>{item.category}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded"
+                          style={{ background: stepIdle, color: muted }}>{item.source}</span>
+                        {item.priority === '高' && (
+                          <span className="text-xs px-1.5 py-0.5 rounded"
+                            style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444' }}>高优</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-              {states.topic.status === 'done' && (
-                <StepContent step="topic" state={states.topic} text={text} muted={muted} cardBg={cardBg} cardBorder={cardBorder} inputBg={inputBg} />
+              ))}
+
+              {states.topic.selectedTopic && (
+                <div className="flex gap-2 mt-3">
+                  <button onClick={generateWrite} disabled={states.write.status === 'loading'}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
+                    {states.write.status === 'loading' ? <Loader size={13} className="animate-spin" /> : <Lightbulb size={13} />}
+                    {states.write.status === 'loading' ? '生成中...' : '生成文案'}
+                  </button>
+                  <button onClick={() => goBackTo('topic')}
+                    className="px-3 py-2 rounded-xl text-xs" style={{ color: muted, border: `1px solid ${cardBorder}` }}>
+                    重新选择
+                  </button>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* 其他步骤 */}
+        {/* 步骤2-5 */}
         <div className="space-y-2 mb-8">
           {STEPS.slice(1).map(step => (
             <StepCard
@@ -256,7 +324,10 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
               isDone={isDone(step.key)}
               canExec={canExec(step.key)}
               onExpand={() => setExpandedStep(isActive(step.key) ? null : step.key)}
-              onAction={() => runStep(step.key)}
+              onAction={
+                step.key === 'write' ? generateWrite :
+                step.key === 'bitable' ? saveToBitable : null
+              }
               onBack={() => goBackTo(step.key)}
               text={text} muted={muted} cardBg={cardBg} cardBorder={cardBorder} inputBg={inputBg}
             />
@@ -266,22 +337,34 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
         {/* 全部完成 */}
         {allDone && (
           <div style={cs({ padding: '1.5rem', textAlign: 'center', borderColor: 'rgba(34,197,94,0.2)' })}>
-            <div className="text-lg font-semibold mb-1" style={{ color: '#22C55E' }}>全链路完成</div>
-            <div className="text-sm mb-4" style={{ color: muted }}>文章已推送至双平台，多维表已录入，音频已生成</div>
-            <button onClick={resetAll}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
-              开始下一篇
-            </button>
+            <div className="text-lg font-semibold mb-1" style={{ color: '#22C55E' }}>全链路完成 ✓</div>
+            <div className="text-sm mb-4" style={{ color: muted }}>
+              文章已录入飞书文案库，可前往复制发布
+            </div>
+            <div className="flex gap-3 justify-center">
+              <a href="https://feishu.cn/base/T9GPbvSvyanRwrsSaHjc2m0Wnle?table=tblCpFs6xT8pIkQT"
+                target="_blank" rel="noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
+                <ExternalLink size={13} />
+                打开文案库
+              </a>
+              <button onClick={resetAll}
+                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
+                开始下一篇
+              </button>
+            </div>
           </div>
         )}
 
-        {/* 底部提示 */}
         {!allDone && (
           <div style={cs({ padding: '1rem' })}>
             <div className="text-xs leading-relaxed" style={{ color: muted }}>
-              <span style={{ color: text }} className="font-medium">使用说明：</span>
-              选题（手动/AI） → 确定后解锁后续步骤 → 每步完成后展开可查看内容 → 点击 ↺ 可返回重做。
+              <span style={{ color: text }} className="font-medium">{isZh ? '使用说明：' : 'Usage:'}</span>
+              {isZh
+                ? '从选题库读取 → 选择选题 → AI生成文案 → 录入多维表 → 生成音频。音频目前使用 TTS 工具生成。'
+                : 'Load topics → Select → AI generates → Save to Feishu → Generate audio (TTS).'}
             </div>
           </div>
         )}
@@ -291,14 +374,13 @@ AI不是灵丹妙药，但它能把创作从4小时压缩到1小时。省下来�
   )
 }
 
-// ===================== StepCard =====================
 function StepCard({ step, stepState, isActive, isDone, canExec, onExpand, onAction, onBack, text, muted, cardBg, cardBorder, inputBg }) {
   const Icon = step.icon
   const [showContent, setShowContent] = useState(false)
 
-  const sDone   = { background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: 'rgba(34,197,94,0.25)' }
-  const sActive  = { background: 'rgba(217,119,6,0.15)', color: '#D97706', border: 'rgba(217,119,6,0.3)' }
-  const sIdle    = { background: cardBg, color: muted, border: cardBorder }
+  const sDone  = { background: 'rgba(34,197,94,0.12)', color: '#22C55E', border: 'rgba(34,197,94,0.25)' }
+  const sActive = { background: 'rgba(217,119,6,0.15)', color: '#D97706', border: 'rgba(217,119,6,0.3)' }
+  const sIdle   = { background: cardBg, color: muted, border: cardBorder }
 
   const s = isDone ? sDone : isActive ? sActive : sIdle
   const borderColor = isDone ? 'rgba(34,197,94,0.2)' : isActive ? 'rgba(217,119,6,0.3)' : cardBorder
@@ -326,7 +408,7 @@ function StepCard({ step, stepState, isActive, isDone, canExec, onExpand, onActi
               <RotateCcw size={13} />
             </button>
           )}
-          {canExec && !isDone && (
+          {canExec && !isDone && onAction && (
             <button onClick={e => { e.stopPropagation(); onAction() }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(217,119,6,0.15)', border: '1px solid rgba(217,119,6,0.3)', color: '#D97706' }}>
@@ -347,11 +429,8 @@ function StepCard({ step, stepState, isActive, isDone, canExec, onExpand, onActi
   )
 }
 
-// ===================== StepContent =====================
 function StepContent({ step, state, text, muted, cardBg, cardBorder, inputBg }) {
-  const s = state
-
-  if (s.status === 'loading') {
+  if (state.status === 'loading') {
     return (
       <div className="flex items-center gap-2 text-sm" style={{ color: '#3B82F6' }}>
         <Loader size={14} className="animate-spin" />
@@ -359,78 +438,65 @@ function StepContent({ step, state, text, muted, cardBg, cardBorder, inputBg }) 
       </div>
     )
   }
-  if (s.status === 'idle') return <div className="text-xs py-2" style={{ color: muted }}>点击上方「执行」开始此步骤</div>
-  if (s.status !== 'done') return null
+  if (state.status === 'idle') return <div className="text-xs py-2" style={{ color: muted }}>点击上方「执行」开始此步骤</div>
+  if (state.status !== 'done') return null
 
   const boxStyle = { background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '0.75rem' }
 
   switch (step) {
-    case 'topic':
-      if (s.mode === 'auto' && s.topicList.length > 0) {
-        return (
-          <div className="space-y-2">
-            <div className="text-xs" style={{ color: muted }}>点击选择选题：</div>
-            {s.topicList.map((t, i) => (
-              <div key={i} className="p-3 rounded-xl cursor-pointer transition-all"
-                style={{ border: `1px solid ${cardBorder}`, background: inputBg }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full border flex items-center justify-center shrink-0"
-                    style={s.selectedTopic === t ? { borderColor: '#D97706', background: 'rgba(217,119,6,0.2)' } : { borderColor: cardBorder }}>
-                    {s.selectedTopic === t && <CheckCircle size={10} style={{ color: '#D97706' }} />}
-                  </div>
-                  <span className="text-sm" style={{ color: text }}>{t}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      }
-      if (s.selectedTopic) {
-        return (
-          <div className="p-3 rounded-xl" style={boxStyle}>
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#22C55E' }}>
-              <CheckCircle size={13} />
-              选题已确认
-            </div>
-            <div className="text-sm mt-1 ml-5" style={{ color: text }}>{s.selectedTopic}</div>
-          </div>
-        )
-      }
-      return null
-
     case 'write':
       return (
         <div className="space-y-3">
           <div className="p-3 rounded-xl" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
             <div className="text-xs mb-1" style={{ color: muted }}>文章标题</div>
-            <div className="text-sm font-semibold" style={{ color: text }}>{s.title}</div>
+            <div className="text-sm font-semibold" style={{ color: text }}>{state.title || '—'}</div>
           </div>
           <div>
             <div className="flex justify-between text-xs mb-1" style={{ color: muted }}>
-              <span>正文内容</span><span>{s.wordCount} 字</span>
+              <span>正文内容</span>
+              <span>{state.wordCount || 0} 字</span>
             </div>
-            <div className="p-3 rounded-xl max-h-40 overflow-y-auto" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
-              <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: muted }}>{s.content}</div>
+            <div className="p-3 rounded-xl max-h-52 overflow-y-auto" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
+              <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: muted }}>{state.content}</div>
             </div>
           </div>
         </div>
       )
 
-    case 'cover':
-    case 'wechat':
-    case 'xhs':
     case 'bitable':
+      return (
+        <div className="space-y-2">
+          <div className="p-3 rounded-xl" style={boxStyle}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: '#22C55E' }}>
+              <CheckCircle size={13} />
+              已录入飞书文案库
+            </div>
+            <div className="text-xs mt-1 ml-5" style={{ color: muted }}>记录ID: {state.recordId}</div>
+          </div>
+          <a href={state.url} target="_blank" rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs transition-all"
+            style={{ background: inputBg, border: `1px solid ${cardBorder}`, color: muted }}>
+            <ExternalLink size={11} />
+            在飞书中查看文案库
+          </a>
+        </div>
+      )
+
     case 'audio':
       return (
         <div className="p-3 rounded-xl" style={boxStyle}>
-          <div className="flex items-center gap-2 text-sm" style={{ color: '#22C55E' }}>
-            <CheckCircle size={13} />
-            {step === 'cover' && '封面图已生成'}
-            {step === 'wechat' && '已推送至公众号草稿箱'}
-            {step === 'xhs' && '已推送至小红书草稿箱'}
-            {step === 'bitable' && `已录入多维表 (${s.recordId || '—'})`}
-            {step === 'audio' && `音频已生成 (约${Math.round((s.duration || 0) / 60)}分钟)`}
+          <div className="text-sm mb-2" style={{ color: '#22C55E' }}>
+            <CheckCircle size={13} className="inline mr-1" />
+            文案已就绪，可使用 TTS 工具生成音频
           </div>
+          <div className="text-xs" style={{ color: muted }}>{state.hint}</div>
+        </div>
+      )
+
+    case 'cover':
+      return (
+        <div className="p-3 rounded-xl text-sm" style={{ background: inputBg, border: `1px solid ${cardBorder}`, color: muted }}>
+          {state.hint}
         </div>
       )
 
