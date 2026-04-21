@@ -107,12 +107,13 @@ function drawAISilhouette(ctx, id, x, y, w, h, color, accent) {
       ctx.fillStyle = accent; ctx.globalAlpha = 0.3
       ctx.beginPath(); ctx.arc(dx - dr * 0.2, dy - dr * 0.2, dr * 0.35, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1
       // 镜内大脑（点线网络）
-      const nodes = [[0,0],[0.4,-0.3],[-0.35,-0.25],[0.3,0.3],[-0.2,0.4],[0,-0.1]]
-      const nx2 = nodes.map(n => dx + n[0] * dr); const ny2 = nodes.map(n => dy + n[1] * dr)
+      const nodesArr = [[0,0],[0.4,-0.3],[-0.35,-0.25],[0.3,0.3],[-0.2,0.4],[0,-0.1]]
+      const nxArr = nodesArr.map(n => dx + n[0] * dr)
+      const nyArr = nodesArr.map(n => dy + n[1] * dr)
       ctx.strokeStyle = accent; ctx.lineWidth = w * 0.018
-      [[0,1],[0,2],[0,5],[1,5],[2,5],[3,4],[3,5],[1,3],[2,4]].forEach(([a,b]) => { ctx.beginPath(); ctx.moveTo(nx2[a],ny2[a]); ctx.lineTo(nx2[b],ny2[b]); ctx.stroke() })
+      ;[[0,1],[0,2],[0,5],[1,5],[2,5],[3,4],[3,5],[1,3],[2,4]].forEach(([a,b]) => { ctx.beginPath(); ctx.moveTo(nxArr[a],nyArr[a]); ctx.lineTo(nxArr[b],nyArr[b]); ctx.stroke() })
       ctx.fillStyle = accent
-      nodes.forEach(([n0,n1]) => { ctx.beginPath(); ctx.arc(dx+n0*dr, dy+n1*dr, w*0.028, 0, Math.PI*2); ctx.fill() })
+      nodesArr.forEach(([n0,n1]) => { ctx.beginPath(); ctx.arc(dx+n0*dr, dy+n1*dr, w*0.028, 0, Math.PI*2); ctx.fill() })
       break
     }
     // 4: Midjourney - 山峰调色板

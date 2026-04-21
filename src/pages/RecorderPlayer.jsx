@@ -317,6 +317,113 @@ function drawTechCard(ctx, pt, index, x, y, w, h, t) {
 }
 
 // ============================================================
+// 顺序卡片（入场 / 退场）
+// ============================================================
+function drawTechCardSeq(ctx, pt, index, x, y, w, h, t) {
+  const r = 10
+  // 背景板
+  ctx.fillStyle = 'rgba(255,255,255,0.05)'
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill()
+
+  // 霓虹边框
+  const neonColor = index % 2 === 0 ? '#06b6d4' : '#a855f7'
+  ctx.strokeStyle = neonColor
+  ctx.lineWidth = 1.5
+  ctx.shadowColor = neonColor
+  ctx.shadowBlur = 8
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.stroke()
+  ctx.shadowBlur = 0
+
+  // 左侧粗竖线
+  const lineGrad = ctx.createLinearGradient(x, y, x, y + h)
+  lineGrad.addColorStop(0, '#06b6d4'); lineGrad.addColorStop(1, '#a855f7')
+  ctx.strokeStyle = lineGrad; ctx.lineWidth = 4
+  ctx.beginPath(); ctx.moveTo(x + 8, y + 12); ctx.lineTo(x + 8, y + h - 12); ctx.stroke()
+
+  // 序号标签
+  ctx.fillStyle = neonColor
+  ctx.font = '700 14px "PingFang SC", sans-serif'
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+  ctx.fillText(`${index + 1}`, x + 22, y + 12)
+
+  // 标题
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '700 20px "PingFang SC", sans-serif'
+  ctx.fillText(pt.label, x + 60, y + 10)
+
+  // 分隔线
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(x + 20, y + 38); ctx.lineTo(x + w - 20, y + 38); ctx.stroke()
+
+  // 内容文字
+  const descText = pt.desc || pt.short || ''
+  ctx.fillStyle = 'rgba(255,255,255,0.72)'
+  ctx.font = '400 15px "PingFang SC", sans-serif'
+  ctx.fillText(descText.slice(0, 60), x + 20, y + 46)
+
+  // 底部脉冲指示条
+  const pulse = (Math.sin(t * 0.003) + 1) / 2
+  const barW = w * 0.3
+  const barX = x + (w - barW) / 2
+  const barY = y + h - 6
+  const pulseGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0)
+  pulseGrad.addColorStop(0, 'transparent'); pulseGrad.addColorStop(0.3, neonColor); pulseGrad.addColorStop(1, 'transparent')
+  ctx.globalAlpha = pulse * 0.5
+  ctx.fillStyle = pulseGrad
+  ctx.fillRect(barX, barY, barW, 3)
+  ctx.globalAlpha = 1
+}
+
+// ============================================================
+// 全展示瀑布流卡片
+// ============================================================
+function drawTechCardFull(ctx, pt, index, x, y, w, h, t, isNew) {
+  const r = 12
+  const neonColor = index % 2 === 0 ? '#06b6d4' : '#a855f7'
+  const accentColor = index % 3 === 0 ? '#22d3ee' : index % 3 === 1 ? '#818cf8' : '#c084fc'
+
+  // 背景
+  ctx.fillStyle = isNew ? 'rgba(6,182,212,0.08)' : 'rgba(255,255,255,0.04)'
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill()
+
+  // 边框发光
+  ctx.strokeStyle = neonColor; ctx.lineWidth = 1.5
+  ctx.shadowColor = neonColor; ctx.shadowBlur = isNew ? 16 : 8
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.stroke()
+  ctx.shadowBlur = 0
+
+  // 左上角装饰
+  ctx.fillStyle = accentColor
+  ctx.beginPath()
+  ctx.moveTo(x + 10, y + 10); ctx.lineTo(x + 36, y + 10); ctx.lineTo(x + 10, y + 36)
+  ctx.closePath(); ctx.fill()
+
+  // 序号
+  ctx.fillStyle = accentColor
+  ctx.font = '700 11px "PingFang SC", sans-serif'
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+  ctx.fillText(`#${index + 1}`, x + 16, y + 44)
+
+  // 标题
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '700 16px "PingFang SC", sans-serif'
+  ctx.fillText(pt.label, x + 16, y + 62)
+
+  // 内容描述（根据卡片高度决定行数）
+  const descText = pt.desc || pt.short || ''
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'
+  ctx.font = '400 12px "PingFang SC", sans-serif'
+  ctx.fillText(descText.slice(0, 40), x + 16, y + 86)
+
+  // 全展示时的脉冲动画
+  const pulse = (Math.sin(t * 0.002 + index * 0.5) + 1) / 2
+  ctx.globalAlpha = pulse * 0.15
+  ctx.fillStyle = accentColor
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill()
+  ctx.globalAlpha = 1
+}
+
+// ============================================================
 // 爆炸效果
 // ============================================================
 function drawExplosion(ctx, cw, ch, prog) {
@@ -454,6 +561,7 @@ class AnimEngine {
     this.cols = n <= 4 ? 2 : n <= 6 ? 3 : 4
     this.rows = Math.ceil(n / this.cols)
     this.coverCanvas = null
+    this.shapeType = opts.shapeType ?? -1
   }
 
   setCover(canvas) { this.coverCanvas = canvas }
@@ -462,36 +570,32 @@ class AnimEngine {
     const titleLen = this.data.title.length
     const titleEnd = 50 + titleLen * 180
 
-    // 风格三（AI科技）：封面 → 波浪标题 → 内容波浪出现 → 交错消失/出现 → 全展示 → Slogan
+    // 风格三（AI科技）：封面 → 波浪标题 → 顺序卡片 → 全展示 → Slogan
     if (this.style === 'tech') {
       const coverDur = 1500
-      const titleDone = 1500 + titleLen * 120
+      const titleDone = 1500 + titleLen * 120   // 打字机结束
       const titleBounceDur = 800
-      const titleAtTop = titleDone + titleBounceDur
+      const titleAtTop = titleDone + titleBounceDur  // 3.5s 左右
       const n = this.data.points.length
-      const waveCount = Math.min(4, n)
-      const cardsPerWave = Math.ceil(n / waveCount)
-      const waveStart = titleAtTop + 300
-      const cards = this.data.points.map((_, i) => {
-        const waveIdx = Math.floor(i / cardsPerWave)
-        const posInWave = i % cardsPerWave
-        const bounceOffset = posInWave * 120
-        return {
-          wave: waveIdx,
-          bounceDelay: bounceOffset,
-          appear: waveStart + waveIdx * 1200 + bounceOffset,
-          disappear: 8500 + (waveIdx % 2) * 600,
-          reappear: 9500 + (waveIdx % 2) * 600,
-          reappearOffset: bounceOffset,
-        }
-      })
-      const fullDisplayStart = 10500
+      const cardDur = 2000        // 每张卡片完整周期
+      const cardGap = 1200        // 下一张开始的时间间隔
+      const titleStable = titleAtTop + 500  // 标题稳定后开始卡片
+
+      const cards = this.data.points.map((_, i) => ({
+        appear: titleStable + i * cardGap,       // 开始滑入
+        enterEnd: titleStable + i * cardGap + 500, // 完全入场
+        exitStart: titleStable + i * cardGap + cardDur - 500, // 开始消失
+        exitEnd: titleStable + i * cardGap + cardDur,   // 完全消失
+      }))
+
+      const lastCardExit = titleStable + (n - 1) * cardGap + cardDur + 200
+      const fullDisplayStart = lastCardExit + 400
       const fullDisplayDur = 2000
       const expDur = 1000
       const sloganDur = 2500
       const endHold = 2200
       const total = fullDisplayStart + fullDisplayDur + expDur + sloganDur + endHold
-      return { titleEnd, titleDone, titleAtTop, coverDur, waveStart, cards, waveCount, cardsPerWave, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total }
+      return { titleEnd, titleDone, titleAtTop, coverDur, titleStable, cards, cardDur, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total }
     }
 
     if (this.style === 'minimal') {
@@ -553,25 +657,24 @@ class AnimEngine {
 
     // ===== 风格三（AI科技）=====
     if (this.style === 'tech') {
-      const { titleEnd, titleAtTop, coverDur, cards, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total } = this.getTimings()
+      const { titleEnd, titleAtTop, coverDur, titleStable, cards, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total } = this.getTimings()
 
+      // 深空黑背景
       ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch)
       drawTechParticles(ctx, cw, ch, t)
 
-      // 封面图（0–1.5s）：直接在本地 canvas 上绘制
+      // 封面图（0–1.5s）
       if (!this._coverCanvas) {
         this._coverCanvas = document.createElement('canvas')
         this._coverCanvas.width = 1080; this._coverCanvas.height = 1920
         const cc = this._coverCanvas.getContext('2d')
-        const iconId = shapeType >= 0 ? shapeType : Math.floor(Math.random() * AI_ICON_OPTIONS.length)
+        const iconId = this.shapeType >= 0 ? this.shapeType : Math.floor(Math.random() * AI_ICON_OPTIONS.length)
         drawAICover(cc, iconId)
       }
-
       let coverAlpha = 0
       if (t < coverDur * 0.4) coverAlpha = t / (coverDur * 0.4)
       else if (t < coverDur * 0.75) coverAlpha = 1
       else if (t < coverDur) coverAlpha = 1 - (t - coverDur * 0.75) / (coverDur * 0.25)
-
       if (coverAlpha > 0) {
         ctx.save(); ctx.globalAlpha = coverAlpha
         const cs = t < coverDur * 0.4 ? 0.6 + 0.4 * (t / (coverDur * 0.4)) : 1
@@ -580,7 +683,6 @@ class AnimEngine {
         ctx.drawImage(this._coverCanvas, cw/2 - coverW/2, ch/2 - coverH/2, coverW, coverH)
         ctx.restore()
       }
-
       // 水印
       if (t > coverDur * 0.3 && t < coverDur) {
         const wmAlpha = Math.min(1,(t - coverDur*0.3)/300) * Math.min(1,(coverDur-t)/300)
@@ -590,95 +692,123 @@ class AnimEngine {
         ctx.fillText('@小福AI自由', cw / 2, ch - 24); ctx.restore()
       }
 
-      // 标题
+      // ===== 标题打字机 + 弹跳到左上角 =====
       const titleChars = Math.min(this.data.title.length + 1, Math.max(0, Math.floor((t - 50) / 120)) + 1)
-      const titleFinalY = ch * 0.1, titleFinalX = cw * 0.08, titleScale = 0.85
+      const titleFinalX = cw * 0.08, titleFinalY = ch * 0.1, titleScale = 0.85
       const titleStartX = cw / 2, titleStartY = ch * 0.42
-
       let titleX, titleY, titleScale2
-      if (t < titleEnd) { titleX = titleStartX; titleY = titleStartY; titleScale2 = 1 }
-      else if (t < titleAtTop) {
+      if (t < titleEnd) {
+        titleX = titleStartX; titleY = titleStartY; titleScale2 = 1
+      } else if (t < titleAtTop) {
         const bp = (t - titleEnd) / (titleAtTop - titleEnd)
-        const wave = Math.sin(bp * Math.PI)
-        const overshoot = wave * ch * 0.12
+        const overshoot = Math.sin(bp * Math.PI) * ch * 0.12
         titleX = titleStartX + (titleFinalX - titleStartX) * bp
         titleY = titleStartY + (titleFinalY - titleStartY) * bp - overshoot
         titleScale2 = 1 - (1 - titleScale) * bp
-      } else { titleX = titleFinalX; titleY = titleFinalY; titleScale2 = titleScale }
-
+      } else {
+        titleX = titleFinalX; titleY = titleFinalY; titleScale2 = titleScale
+      }
       if (titleChars > 0) drawTechTitle(ctx, this.data.title, Math.min(titleChars, this.data.title.length + 1), cw, titleX, titleY, titleScale2, 1, t)
 
-      // 装饰线
-      if (t >= titleAtTop + 200) {
-        const lineAlpha = Math.min(1, (t - titleAtTop - 200) / 400)
-        const lineW = cw * 0.7
-        ctx.save(); ctx.globalAlpha = lineAlpha * 0.6
-        const lineGrad = ctx.createLinearGradient(titleFinalX, 0, titleFinalX + lineW, 0)
-        lineGrad.addColorStop(0, 'transparent'); lineGrad.addColorStop(0.3, '#06b6d4')
-        lineGrad.addColorStop(0.7, '#a855f7'); lineGrad.addColorStop(1, 'transparent')
-        ctx.strokeStyle = lineGrad; ctx.lineWidth = 1.5
-        ctx.beginPath(); ctx.moveTo(titleFinalX, titleY + 36); ctx.lineTo(titleFinalX + lineW, titleY + 36); ctx.stroke()
+      // 装饰线（标题稳定后出现）
+      if (t >= titleAtTop + 400) {
+        const lineAlpha = Math.min(1, (t - titleAtTop - 400) / 500)
+        const lineW = cw * 0.6
+        ctx.save(); ctx.globalAlpha = lineAlpha * 0.7
+        const lg = ctx.createLinearGradient(titleFinalX, 0, titleFinalX + lineW, 0)
+        lg.addColorStop(0, 'transparent'); lg.addColorStop(0.3, '#06b6d4')
+        lg.addColorStop(0.7, '#a855f7'); lg.addColorStop(1, 'transparent')
+        ctx.strokeStyle = lg; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(titleFinalX, titleY + 40); ctx.lineTo(titleFinalX + lineW, titleY + 40); ctx.stroke()
         ctx.restore()
       }
 
-      // 内容卡片波浪式出现
+      // ===== 顺序卡片：一张完全消失后下一张才出现 =====
       const n = this.data.points.length
-      const cardH = ch * 0.11, cardGap = ch * 0.008
-      const cardBaseX = cw * 0.08
-
-      if (t >= titleAtTop) {
-        for (let i = 0; i < n; i++) {
-          const card = cards[i]
-          const cardY = ch * 0.22 + i * (cardH + cardGap)
-          let cardX = cardBaseX + cw * 0.12
-          let cardAlpha = 1, cardYOff = 0
-
-          if (t >= card.appear) {
-            const entryProg = Math.min(1, (t - card.appear) / 500)
-            cardX = cardBaseX + cw * 0.12 * (1 - easeOutBack(entryProg))
-          }
-
-          const waveTime = t - Math.max(card.appear, titleAtTop)
-          cardYOff = Math.sin(waveTime / 600 + i * 0.7) * ch * 0.008
-
-          if (t >= card.disappear && t < card.reappear) {
-            const disappearProg = Math.min(1, (t - card.disappear) / 400)
-            const dir = card.wave % 2 === 0 ? 1 : -1
-            cardX = cardBaseX + dir * disappearProg * cw * 0.3
-            cardAlpha = 1 - disappearProg
-          }
-
-          if (t >= card.reappear) {
-            const reappearProg = Math.min(1, (t - card.reappear) / 400)
-            const dir = card.wave % 2 === 0 ? 1 : -1
-            cardX = cardBaseX + dir * (1 - easeOutBack(reappearProg)) * cw * 0.3
-            cardAlpha = reappearProg
-            const waveTime2 = t - card.reappear
-            cardYOff = Math.sin(waveTime2 / 600 + i * 0.7) * ch * 0.006
-          }
-
-          if (cardAlpha <= 0) continue
-          ctx.save(); ctx.globalAlpha = cardAlpha
-          drawTechCard(ctx, this.data.points[i], i, cardX, cardY + cardYOff, cw * 0.84, cardH, t)
-          ctx.restore()
+      // 找出当前应该显示的卡片索引（-1 = 还没开始）
+      let curCard = -1
+      for (let i = 0; i < n; i++) {
+        if (t >= cards[i].appear) curCard = i
+      }
+      // 正在消失的卡片
+      let fadingCard = -1
+      for (let i = 0; i < n; i++) {
+        if (t >= cards[i].exitStart && t < cards[i].exitEnd) {
+          fadingCard = i
+          break
         }
       }
 
-      // 全展示阶段
+      const cardW = cw * 0.84
+      const cardH = ch * 0.13
+      const cardX = cw * 0.08
+      const cardY = ch * 0.22
+
+      // 绘制当前正常显示的卡片
+      if (curCard >= 0 && fadingCard < 0) {
+        const cd = cards[curCard]
+        // 入场进度
+        const enterProg = t < cd.enterEnd ? Math.min(1, (t - cd.appear) / 500) : 1
+        const cx2 = cardX + cardW + cw * 0.08 - (cardW + cw * 0.08) * (1 - easeOutBack(enterProg))
+        ctx.save()
+        ctx.globalAlpha = enterProg
+        drawTechCardSeq(ctx, this.data.points[curCard], curCard, cx2, cardY, cardW, cardH, t)
+        ctx.restore()
+      }
+
+      // 绘制正在消失的卡片
+      if (fadingCard >= 0) {
+        const cd = cards[fadingCard]
+        const fadeProg = Math.min(1, (t - cd.exitStart) / 500)
+        // 从右向左滑出
+        const cx2 = cardX + cardW * fadeProg
+        const alpha = 1 - fadeProg
+        ctx.save()
+        ctx.globalAlpha = alpha
+        drawTechCardSeq(ctx, this.data.points[fadingCard], fadingCard, cx2, cardY, cardW, cardH, t)
+        ctx.restore()
+      }
+
+      // ===== 全展示：瀑布流错落布局 =====
       if (t >= fullDisplayStart) {
         const fullProg = Math.min(1, (t - fullDisplayStart) / fullDisplayDur)
-        ctx.save(); ctx.globalAlpha = fullProg * 0.12; ctx.fillStyle = '#06b6d4'; ctx.fillRect(0, 0, cw, ch); ctx.restore()
-        drawTechTitle(ctx, this.data.title, this.data.title.length + 1, cw, cw / 2, ch * 0.08, 1.1, fullProg, t)
-        const fullCardH = ch * 0.09, fullCardGap = ch * 0.005
+
+        // 背景闪烁
+        ctx.save(); ctx.globalAlpha = fullProg * 0.08; ctx.fillStyle = '#06b6d4'; ctx.fillRect(0, 0, cw, ch); ctx.restore()
+
+        // 标题居中
+        drawTechTitle(ctx, this.data.title, this.data.title.length + 1, cw, cw / 2, ch * 0.07, 1.2, fullProg, t)
+
+        // 装饰分隔线
+        const lineY = ch * 0.16
+        ctx.save(); ctx.globalAlpha = fullProg * 0.5
+        const lg2 = ctx.createLinearGradient(cw * 0.15, 0, cw * 0.85, 0)
+        lg2.addColorStop(0, 'transparent'); lg2.addColorStop(0.2, '#06b6d4'); lg2.addColorStop(0.8, '#a855f7'); lg2.addColorStop(1, 'transparent')
+        ctx.strokeStyle = lg2; ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(cw * 0.15, lineY); ctx.lineTo(cw * 0.85, lineY); ctx.stroke(); ctx.restore()
+
+        // 瀑布流布局：奇数高、偶数矮，左侧竖线连接
+        const colW = cw * 0.42
+        const tallH = ch * 0.22
+        const shortH = ch * 0.15
+        const gapX = cw * 0.04
+        const gapY = ch * 0.025
+        const startY = ch * 0.2
+
         for (let i = 0; i < n; i++) {
-          const fullY = ch * 0.22 + i * (fullCardH + fullCardGap)
+          const col = i % 2
+          const row = Math.floor(i / 2)
+          const cx3 = cw * 0.08 + col * (colW + gapX)
+          const cy2 = startY + row * (tallH + gapY)
+          const rh = i % 3 === 1 ? shortH : tallH  // 第1、4、7...张用短卡
+          const isNew = (i >= n - 3)  // 最后3张用特殊样式
           ctx.save(); ctx.globalAlpha = fullProg
-          drawTechCard(ctx, this.data.points[i], i, cw * 0.08, fullY, cw * 0.84, fullCardH, t)
+          drawTechCardFull(ctx, this.data.points[i], i, cx3, cy2, colW, rh, t, isNew)
           ctx.restore()
         }
       }
 
-      // 爆炸 + Slogan 收尾
+      // ===== 爆炸 + Slogan 收尾 =====
       if (t >= fullDisplayStart + fullDisplayDur) {
         const expProg = Math.min(1, (t - fullDisplayStart - fullDisplayDur) / expDur)
         const sloganProg = Math.min(1, (t - fullDisplayStart - fullDisplayDur - expDur) / sloganDur)
@@ -1386,6 +1516,10 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
       const cardDur = 1800
       const lastCardAppear = slideEnd2 + 200 + (n - 1) * cardDur
       meltStart = lastCardAppear + 300
+    } else if (animationStyle === 'tech') {
+      // tech 风格总时长 = fullDisplayStart + fullDisplayDur + expDur + sloganDur + endHold
+      // = 10500 + 2000 + 1000 + 2500 + 2200 = 18200
+      meltStart = 10500 + 2000 + 1000 + 2500 + 2200 + 500
     } else {
       const slideEnd2 = titleEnd + 600
       const gridAppear2 = slideEnd2 + 100
@@ -1421,6 +1555,7 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
 
     const engine = new AnimEngine(canvas, data, {
       animationStyle,
+      shapeType,
       onDone: () => {
         if (recorderRef.current && recorderRef.current.state !== 'inactive') {
           recorderRef.current.stop()
