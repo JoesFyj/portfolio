@@ -1563,7 +1563,7 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
       },
       onProgress: (p) => setProgress(p),
     })
-    if (animationStyle !== 'minimal') {
+    if (animationStyle !== 'minimal' && animationStyle !== 'tech') {
       engine.updateCellStates = (now) => {
         const t2 = now - engine.startTime
         const cs2 = engine.getTimings().cells
@@ -1575,6 +1575,9 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
         })
         if (engine.startTime) checkSounds(engine)
       }
+    } else if (animationStyle === 'tech') {
+      // tech 风格暂不需要 cellStates 更新
+      engine.updateCellStates = () => {}
     } else {
       // 风格二：每个卡片出现时播放音效
       let prevCard = -1
