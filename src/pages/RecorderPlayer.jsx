@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { drawCover } from '../lib/shapes'
+import { drawCover, drawLandmarkCover } from '../lib/shapes'
+import { drawAICover, AI_ICON_OPTIONS } from '../lib/ai_icons'
 
 // 颜色配置
 const COLORS = ['#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6']
@@ -216,6 +217,106 @@ function drawCell(ctx, pt, index, x, y, w, h, state, color, cw) {
 }
 
 // ============================================================
+// AI科技风格辅助函数
+// ============================================================
+function easeOutBack(x) {
+  const c1 = 1.70158, c3 = c1 + 1
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
+}
+
+function drawTechParticles(ctx, cw, ch, t) {
+  ctx.save()
+  for (let i = 0; i < 60; i++) {
+    const sx = ((i * 137 + 23) % cw + t * 0.008 * (i % 5 + 1)) % cw
+    const sy = ((i * 97 + 11) % ch + Math.sin(t / 2000 + i * 1.3) * 8) % ch
+    const size = 0.5 + (i % 3) * 0.5
+    const alpha = 0.06 + (i % 5) * 0.025
+    ctx.globalAlpha = alpha
+    ctx.fillStyle = i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#a855f7' : '#ffffff'
+    ctx.beginPath(); ctx.arc(sx, sy, size, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.globalAlpha = 1
+  ctx.restore()
+}
+
+function drawTechTitle(ctx, text, chars, cw, x, y, scale, alpha, t) {
+  if (!text || chars <= 0) return
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.textBaseline = 'middle'
+
+  const fontSize = Math.round(cw * 0.048 * scale)
+  const doneChars = Math.min(text.length, Math.max(0, chars - 1))
+
+  const grad = ctx.createLinearGradient(x - cw * 0.25, 0, x + cw * 0.25, 0)
+  grad.addColorStop(0, '#06b6d4')
+  grad.addColorStop(0.5, '#a855f7')
+  grad.addColorStop(1, '#ec4899')
+
+  ctx.font = `900 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`
+  ctx.textAlign = 'left'
+  ctx.shadowColor = 'rgba(168,85,247,0.7)'
+  ctx.shadowBlur = cw * 0.025
+  ctx.fillStyle = grad
+
+  if (doneChars > 0) {
+    ctx.fillText(text.slice(0, doneChars), x, y)
+  }
+
+  if (chars <= text.length) {
+    const lastChar = text[chars - 1]
+    const prevText = text.slice(0, doneChars)
+    const prevW = doneChars > 0 ? ctx.measureText(prevText).width : 0
+    const lastW = ctx.measureText(lastChar).width
+    const lastX = x + prevW + lastW / 2
+    const sc = 1.4
+    ctx.save()
+    ctx.translate(lastX, y); ctx.scale(sc, sc); ctx.translate(-lastX, -y)
+    ctx.fillText(lastChar, x + prevW, y)
+    ctx.restore()
+    // 脉冲光点
+    ctx.globalAlpha = alpha * 0.35
+    ctx.fillStyle = '#ffffff'
+    ctx.shadowBlur = 0
+    ctx.beginPath(); ctx.arc(lastX, y, fontSize * 0.55, 0, Math.PI * 2); ctx.fill()
+  }
+
+  ctx.restore()
+}
+
+function drawTechCard(ctx, pt, index, x, y, w, h, t) {
+  const r = 8
+  // 背景
+  ctx.fillStyle = 'rgba(255,255,255,0.04)'
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill()
+  // 边框发光
+  ctx.strokeStyle = index % 2 === 0 ? 'rgba(6,182,212,0.3)' : 'rgba(168,85,247,0.3)'
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.stroke()
+
+  // 左侧竖线
+  const lineGrad = ctx.createLinearGradient(x, y, x, y + h)
+  lineGrad.addColorStop(0, '#06b6d4')
+  lineGrad.addColorStop(1, '#a855f7')
+  ctx.strokeStyle = lineGrad
+  ctx.lineWidth = 3
+  ctx.beginPath(); ctx.moveTo(x + 6, y + 8); ctx.lineTo(x + 6, y + h - 8); ctx.stroke()
+
+  // 标题文字
+  ctx.fillStyle = '#ffffff'
+  ctx.font = '700 18px "PingFang SC", sans-serif'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  ctx.fillText(pt.label, x + 20, y + 10)
+
+  // 内容文字
+  const descText = pt.desc || pt.short || ''
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'
+  ctx.font = '400 13px "PingFang SC", sans-serif'
+  ctx.fillText(descText.slice(0, 50), x + 20, y + 36)
+}
+
+// ============================================================
 // 爆炸效果
 // ============================================================
 function drawExplosion(ctx, cw, ch, prog) {
@@ -335,6 +436,7 @@ class AnimEngine {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.data = data
+    this.style = opts.animationStyle || 'chinese'
     this.onDone = opts.onDone
     this.onProgress = opts.onProgress
     this.startTime = null
@@ -351,11 +453,65 @@ class AnimEngine {
     this.cellStates = new Array(n).fill(0)
     this.cols = n <= 4 ? 2 : n <= 6 ? 3 : 4
     this.rows = Math.ceil(n / this.cols)
+    this.coverCanvas = null
   }
+
+  setCover(canvas) { this.coverCanvas = canvas }
 
   getTimings() {
     const titleLen = this.data.title.length
     const titleEnd = 50 + titleLen * 180
+
+    // 风格三（AI科技）：封面 → 波浪标题 → 内容波浪出现 → 交错消失/出现 → 全展示 → Slogan
+    if (this.style === 'tech') {
+      const coverDur = 1500
+      const titleDone = 1500 + titleLen * 120
+      const titleBounceDur = 800
+      const titleAtTop = titleDone + titleBounceDur
+      const n = this.data.points.length
+      const waveCount = Math.min(4, n)
+      const cardsPerWave = Math.ceil(n / waveCount)
+      const waveStart = titleAtTop + 300
+      const cards = this.data.points.map((_, i) => {
+        const waveIdx = Math.floor(i / cardsPerWave)
+        const posInWave = i % cardsPerWave
+        const bounceOffset = posInWave * 120
+        return {
+          wave: waveIdx,
+          bounceDelay: bounceOffset,
+          appear: waveStart + waveIdx * 1200 + bounceOffset,
+          disappear: 8500 + (waveIdx % 2) * 600,
+          reappear: 9500 + (waveIdx % 2) * 600,
+          reappearOffset: bounceOffset,
+        }
+      })
+      const fullDisplayStart = 10500
+      const fullDisplayDur = 2000
+      const expDur = 1000
+      const sloganDur = 2500
+      const endHold = 2200
+      const total = fullDisplayStart + fullDisplayDur + expDur + sloganDur + endHold
+      return { titleEnd, titleDone, titleAtTop, coverDur, waveStart, cards, waveCount, cardsPerWave, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total }
+    }
+
+    if (this.style === 'minimal') {
+      // 风格二：标题 → 左上角 → 依次单独展示卡片
+      const slideEnd = titleEnd + 500
+      const cardDur = 1800 // 每个卡片展示时间
+      const cardFadeIn = 350
+      const cells = this.data.points.map((_, i) => ({
+        appear: slideEnd + 200 + i * cardDur,
+        fadeOut: slideEnd + 200 + i * cardDur + cardDur - cardFadeIn,
+      }))
+      const lastCardEnd = cells[cells.length - 1].fadeOut + 300
+      const expDur = 1200
+      const sloganDur = 2500
+      const endHold = 2200
+      const total = lastCardEnd + expDur + sloganDur + endHold
+      return { titleEnd, slideEnd, cells, meltStart: lastCardEnd, expDur, sloganDur, endHold, total, cardDur, cardFadeIn }
+    }
+
+    // 风格一（中国风）：标题 → 顶部 → 网格卡片依次出现
     const slideStart = titleEnd
     const slideEnd = titleEnd + 600
     const gridAppear = slideEnd + 100
@@ -389,14 +545,161 @@ class AnimEngine {
     if (this.done) return
     if (!this.startTime) this.startTime = now
     const t = now - this.startTime
-    const { titleEnd, slideStart, slideEnd, gridAppear, cells, meltStart, expDur, sloganDur, endHold, total } = this.getTimings()
+    const { titleEnd, slideEnd, cells, meltStart, expDur, sloganDur, endHold, total, cardDur, cardFadeIn } = this.getTimings()
     const { ctx, cw, ch } = this
 
     const prog = Math.min(1, t / total)
     this.onProgress(Math.round(prog * 88))
 
+    // ===== 风格三（AI科技）=====
+    if (this.style === 'tech') {
+      const { titleEnd, titleAtTop, coverDur, cards, fullDisplayStart, fullDisplayDur, expDur, sloganDur, endHold, total } = this.getTimings()
+
+      ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch)
+      drawTechParticles(ctx, cw, ch, t)
+
+      // 封面图（0–1.5s）：直接在本地 canvas 上绘制
+      if (!this._coverCanvas) {
+        this._coverCanvas = document.createElement('canvas')
+        this._coverCanvas.width = 1080; this._coverCanvas.height = 1920
+        const cc = this._coverCanvas.getContext('2d')
+        const iconId = shapeType >= 0 ? shapeType : Math.floor(Math.random() * AI_ICON_OPTIONS.length)
+        drawAICover(cc, iconId)
+      }
+
+      let coverAlpha = 0
+      if (t < coverDur * 0.4) coverAlpha = t / (coverDur * 0.4)
+      else if (t < coverDur * 0.75) coverAlpha = 1
+      else if (t < coverDur) coverAlpha = 1 - (t - coverDur * 0.75) / (coverDur * 0.25)
+
+      if (coverAlpha > 0) {
+        ctx.save(); ctx.globalAlpha = coverAlpha
+        const cs = t < coverDur * 0.4 ? 0.6 + 0.4 * (t / (coverDur * 0.4)) : 1
+        const coverW = cw * 0.22, coverH = coverW * (16 / 9)
+        ctx.translate(cw/2, ch/2); ctx.scale(cs, cs); ctx.translate(-cw/2, -ch/2)
+        ctx.drawImage(this._coverCanvas, cw/2 - coverW/2, ch/2 - coverH/2, coverW, coverH)
+        ctx.restore()
+      }
+
+      // 水印
+      if (t > coverDur * 0.3 && t < coverDur) {
+        const wmAlpha = Math.min(1,(t - coverDur*0.3)/300) * Math.min(1,(coverDur-t)/300)
+        ctx.save(); ctx.globalAlpha = wmAlpha * 0.7
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
+        ctx.font = '600 22px "PingFang SC", sans-serif'; ctx.fillStyle = '#ffffff'
+        ctx.fillText('@小福AI自由', cw / 2, ch - 24); ctx.restore()
+      }
+
+      // 标题
+      const titleChars = Math.min(this.data.title.length + 1, Math.max(0, Math.floor((t - 50) / 120)) + 1)
+      const titleFinalY = ch * 0.1, titleFinalX = cw * 0.08, titleScale = 0.85
+      const titleStartX = cw / 2, titleStartY = ch * 0.42
+
+      let titleX, titleY, titleScale2
+      if (t < titleEnd) { titleX = titleStartX; titleY = titleStartY; titleScale2 = 1 }
+      else if (t < titleAtTop) {
+        const bp = (t - titleEnd) / (titleAtTop - titleEnd)
+        const wave = Math.sin(bp * Math.PI)
+        const overshoot = wave * ch * 0.12
+        titleX = titleStartX + (titleFinalX - titleStartX) * bp
+        titleY = titleStartY + (titleFinalY - titleStartY) * bp - overshoot
+        titleScale2 = 1 - (1 - titleScale) * bp
+      } else { titleX = titleFinalX; titleY = titleFinalY; titleScale2 = titleScale }
+
+      if (titleChars > 0) drawTechTitle(ctx, this.data.title, Math.min(titleChars, this.data.title.length + 1), cw, titleX, titleY, titleScale2, 1, t)
+
+      // 装饰线
+      if (t >= titleAtTop + 200) {
+        const lineAlpha = Math.min(1, (t - titleAtTop - 200) / 400)
+        const lineW = cw * 0.7
+        ctx.save(); ctx.globalAlpha = lineAlpha * 0.6
+        const lineGrad = ctx.createLinearGradient(titleFinalX, 0, titleFinalX + lineW, 0)
+        lineGrad.addColorStop(0, 'transparent'); lineGrad.addColorStop(0.3, '#06b6d4')
+        lineGrad.addColorStop(0.7, '#a855f7'); lineGrad.addColorStop(1, 'transparent')
+        ctx.strokeStyle = lineGrad; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(titleFinalX, titleY + 36); ctx.lineTo(titleFinalX + lineW, titleY + 36); ctx.stroke()
+        ctx.restore()
+      }
+
+      // 内容卡片波浪式出现
+      const n = this.data.points.length
+      const cardH = ch * 0.11, cardGap = ch * 0.008
+      const cardBaseX = cw * 0.08
+
+      if (t >= titleAtTop) {
+        for (let i = 0; i < n; i++) {
+          const card = cards[i]
+          const cardY = ch * 0.22 + i * (cardH + cardGap)
+          let cardX = cardBaseX + cw * 0.12
+          let cardAlpha = 1, cardYOff = 0
+
+          if (t >= card.appear) {
+            const entryProg = Math.min(1, (t - card.appear) / 500)
+            cardX = cardBaseX + cw * 0.12 * (1 - easeOutBack(entryProg))
+          }
+
+          const waveTime = t - Math.max(card.appear, titleAtTop)
+          cardYOff = Math.sin(waveTime / 600 + i * 0.7) * ch * 0.008
+
+          if (t >= card.disappear && t < card.reappear) {
+            const disappearProg = Math.min(1, (t - card.disappear) / 400)
+            const dir = card.wave % 2 === 0 ? 1 : -1
+            cardX = cardBaseX + dir * disappearProg * cw * 0.3
+            cardAlpha = 1 - disappearProg
+          }
+
+          if (t >= card.reappear) {
+            const reappearProg = Math.min(1, (t - card.reappear) / 400)
+            const dir = card.wave % 2 === 0 ? 1 : -1
+            cardX = cardBaseX + dir * (1 - easeOutBack(reappearProg)) * cw * 0.3
+            cardAlpha = reappearProg
+            const waveTime2 = t - card.reappear
+            cardYOff = Math.sin(waveTime2 / 600 + i * 0.7) * ch * 0.006
+          }
+
+          if (cardAlpha <= 0) continue
+          ctx.save(); ctx.globalAlpha = cardAlpha
+          drawTechCard(ctx, this.data.points[i], i, cardX, cardY + cardYOff, cw * 0.84, cardH, t)
+          ctx.restore()
+        }
+      }
+
+      // 全展示阶段
+      if (t >= fullDisplayStart) {
+        const fullProg = Math.min(1, (t - fullDisplayStart) / fullDisplayDur)
+        ctx.save(); ctx.globalAlpha = fullProg * 0.12; ctx.fillStyle = '#06b6d4'; ctx.fillRect(0, 0, cw, ch); ctx.restore()
+        drawTechTitle(ctx, this.data.title, this.data.title.length + 1, cw, cw / 2, ch * 0.08, 1.1, fullProg, t)
+        const fullCardH = ch * 0.09, fullCardGap = ch * 0.005
+        for (let i = 0; i < n; i++) {
+          const fullY = ch * 0.22 + i * (fullCardH + fullCardGap)
+          ctx.save(); ctx.globalAlpha = fullProg
+          drawTechCard(ctx, this.data.points[i], i, cw * 0.08, fullY, cw * 0.84, fullCardH, t)
+          ctx.restore()
+        }
+      }
+
+      // 爆炸 + Slogan 收尾
+      if (t >= fullDisplayStart + fullDisplayDur) {
+        const expProg = Math.min(1, (t - fullDisplayStart - fullDisplayDur) / expDur)
+        const sloganProg = Math.min(1, (t - fullDisplayStart - fullDisplayDur - expDur) / sloganDur)
+        drawExplosion(ctx, cw, ch, expProg)
+        if (sloganProg > 0) {
+          ctx.fillStyle = `rgba(8, 12, 20, ${Math.min(0.95, sloganProg * 1.5)})`
+          ctx.fillRect(0, 0, cw, ch)
+          drawMainTextStyle2(ctx, cw, ch, sloganProg)
+        }
+        if (t >= fullDisplayStart + fullDisplayDur + expDur + sloganDur + endHold) {
+          this.done = true; cancelAnimationFrame(this.animId); this.onDone(); return
+        }
+        this.animId = requestAnimationFrame(ts => this.draw(ts)); return
+      }
+
+      this.animId = requestAnimationFrame(ts => this.draw(ts)); return
+    }
+
     const centerY = ch * 0.38
     const topY = ch * 0.065
+    const leftX = cw * 0.06
 
     if (t >= meltStart) {
       const expProg = Math.min(1, (t - meltStart) / expDur)
@@ -407,7 +710,11 @@ class AnimEngine {
       if (sloganProg > 0) {
         ctx.fillStyle = `rgba(10, 10, 20, ${Math.min(0.95, sloganProg * 1.5)})`
         ctx.fillRect(0, 0, cw, ch)
-        drawMainText(ctx, cw, ch, sloganProg)
+        if (this.style === 'minimal') {
+          drawMainTextStyle2(ctx, cw, ch, sloganProg)
+        } else {
+          drawMainText(ctx, cw, ch, sloganProg)
+        }
       }
 
       if (t >= meltStart + expDur + sloganDur + endHold) {
@@ -421,6 +728,83 @@ class AnimEngine {
       return
     }
 
+    // ===== 风格二（简约图文） =====
+    if (this.style === 'minimal') {
+      // 背景
+      ctx.fillStyle = '#f5f5f7'
+      ctx.fillRect(0, 0, cw, ch)
+
+      // 装饰线
+      ctx.save()
+      ctx.globalAlpha = 0.15
+      ctx.strokeStyle = '#8b5cf6'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(cw * 0.05, ch * 0.05)
+      ctx.lineTo(cw * 0.95, ch * 0.05)
+      ctx.stroke()
+      ctx.restore()
+
+      const titleChars = Math.min(this.data.title.length + 1, Math.floor(Math.max(0, t - 50) / 180) + 1)
+
+      // 标题滑动
+      let slideProg = 0
+      if (t > slideEnd) slideProg = 1
+      else if (t > titleEnd) {
+        const sp = (t - titleEnd) / (slideEnd - titleEnd)
+        slideProg = 1 - Math.pow(1 - sp, 3)
+      }
+
+      drawTitleStyle2(ctx, this.data.title, titleChars, cw, centerY, topY, leftX, slideProg)
+
+      // 确定当前显示的卡片索引
+      const n = this.data.points.length
+      let curCard = -1
+      for (let i = 0; i < n; i++) {
+        if (t >= cells[i].appear) curCard = i
+      }
+
+      // 绘制当前卡片
+      if (curCard >= 0) {
+        const cell = cells[curCard]
+        // 入场进度
+        let entryProg = Math.min(1, (t - cell.appear) / cardFadeIn)
+        // 退出进度（下一个卡片入场时当前退出）
+        let exitAlpha = 1
+        if (curCard < n - 1 && t >= cells[curCard + 1].appear - cardFadeIn) {
+          exitAlpha = Math.max(0, 1 - (t - (cells[curCard + 1].appear - cardFadeIn)) / cardFadeIn)
+        }
+
+        ctx.save()
+        ctx.globalAlpha = exitAlpha
+        drawCardStyle2(ctx, this.data.points[curCard], curCard, cw, ch, 1, entryProg)
+        ctx.restore()
+      }
+
+      // 底部页码指示
+      if (curCard >= 0) {
+        const dotY = ch * 0.88
+        const dotR = cw * 0.008
+        const dotGap = cw * 0.025
+        const totalDotsW = (n - 1) * dotGap
+        const dotsStartX = cw / 2 - totalDotsW / 2
+        ctx.save()
+        for (let i = 0; i < n; i++) {
+          ctx.beginPath()
+          ctx.arc(dotsStartX + i * dotGap, dotY, dotR, 0, Math.PI * 2)
+          ctx.fillStyle = i === curCard ? '#8b5cf6' : 'rgba(139,92,246,0.25)'
+          ctx.fill()
+        }
+        ctx.restore()
+      }
+
+      this.animId = requestAnimationFrame(ts => this.draw(ts))
+      return
+    }
+
+    // ===== 风格一（中国风） =====
+    const { slideStart, gridAppear, cells: chCells } = this.getTimings()
+
     ctx.fillStyle = '#FAFAF6'
     ctx.fillRect(0, 0, cw, ch)
 
@@ -432,12 +816,10 @@ class AnimEngine {
 
     const titleChars = Math.min(this.data.title.length + 1, Math.floor(Math.max(0, t - 50) / 180) + 1)
 
-    // 标题滑动进度：打字结束后从 centerY 滑到 topY
     let slideProg = 0
     if (t > slideEnd) slideProg = 1
     else if (t > slideStart) {
       const sp = (t - slideStart) / (slideEnd - slideStart)
-      // ease out cubic
       slideProg = 1 - Math.pow(1 - sp, 3)
     }
 
@@ -479,9 +861,9 @@ class AnimEngine {
       const cy2 = gridTop + row * (cellH + gap)
       const color = COLORS[i % COLORS.length]
 
-      if (t >= cells[i].label) {
+      if (t >= chCells[i].label) {
         const entryDur = 400
-        const ep = Math.min(1, (t - cells[i].label) / entryDur)
+        const ep = Math.min(1, (t - chCells[i].label) / entryDur)
         const ease = 1 - Math.pow(1 - ep, 3)
         ctx.save()
         ctx.globalAlpha = ease
@@ -496,6 +878,336 @@ class AnimEngine {
 
   start() { this.animId = requestAnimationFrame(ts => this.draw(ts)) }
   stop() { if (this.animId) cancelAnimationFrame(this.animId) }
+}
+
+// ============================================================
+// 风格二：简约图文封面（9:16）
+// ============================================================
+function drawCoverStyle2(cw, ch, title) {
+  const canvas = document.createElement('canvas')
+  canvas.width = cw
+  canvas.height = ch
+  const ctx = canvas.getContext('2d')
+
+  const bg = ctx.createLinearGradient(0, 0, cw, ch)
+  bg.addColorStop(0, '#0f0f1a')
+  bg.addColorStop(0.5, '#1a1040')
+  bg.addColorStop(1, '#0a0a14')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, cw, ch)
+
+  ctx.save()
+  ctx.globalAlpha = 0.12
+  const rg = ctx.createRadialGradient(cw * 0.85, ch * 0.2, 0, cw * 0.85, ch * 0.2, cw * 0.5)
+  rg.addColorStop(0, '#8b5cf6')
+  rg.addColorStop(1, 'transparent')
+  ctx.fillStyle = rg
+  ctx.fillRect(0, 0, cw, ch)
+  ctx.restore()
+
+  ctx.save()
+  ctx.globalAlpha = 0.08
+  const rg2 = ctx.createRadialGradient(cw * 0.1, ch * 0.9, 0, cw * 0.1, ch * 0.9, cw * 0.4)
+  rg2.addColorStop(0, '#06b6d4')
+  rg2.addColorStop(1, 'transparent')
+  ctx.fillStyle = rg2
+  ctx.fillRect(0, 0, cw, ch)
+  ctx.restore()
+
+  ctx.save()
+  ctx.globalAlpha = 0.3
+  ctx.strokeStyle = '#8b5cf6'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(cw * 0.08, ch * 0.12)
+  ctx.lineTo(cw * 0.92, ch * 0.12)
+  ctx.stroke()
+  ctx.restore()
+
+  ctx.save()
+  ctx.textAlign = 'center'
+  ctx.font = `600 ${Math.round(cw * 0.028)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = '#8b5cf6'
+  ctx.fillText('SUMMARY', cw / 2, ch * 0.22)
+  ctx.restore()
+
+  ctx.save()
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const titleSize = Math.round(cw * 0.09)
+  ctx.font = `900 ${titleSize}px "PingFang SC", sans-serif`
+  ctx.shadowColor = 'rgba(139,92,246,0.6)'
+  ctx.shadowBlur = cw * 0.04
+  const grad = ctx.createLinearGradient(cw * 0.2, 0, cw * 0.8, 0)
+  grad.addColorStop(0, '#f5f5f5')
+  grad.addColorStop(0.5, '#ffffff')
+  grad.addColorStop(1, '#e0e0e0')
+  ctx.fillStyle = grad
+  ctx.fillText(title, cw / 2, ch * 0.42)
+  ctx.shadowBlur = 0
+  ctx.restore()
+
+  ctx.save()
+  ctx.strokeStyle = 'rgba(139,92,246,0.4)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(cw * 0.3, ch * 0.54)
+  ctx.lineTo(cw * 0.7, ch * 0.54)
+  ctx.stroke()
+  ctx.restore()
+
+  ctx.save()
+  ctx.textAlign = 'center'
+  ctx.font = `500 ${Math.round(cw * 0.035)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.fillText('少工作，多赚钱', cw / 2, ch * 0.62)
+  ctx.font = `400 ${Math.round(cw * 0.028)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'
+  ctx.fillText('小福AI自由', cw / 2, ch * 0.68)
+  ctx.restore()
+
+  return canvas
+}
+
+// ============================================================
+// 风格二：标题（中央打字 → 左上角）
+// ============================================================
+function drawTitleStyle2(ctx, text, chars, cw, centerY, topY, leftX, slideProg) {
+  if (!text || chars <= 0) return
+  ctx.save()
+
+  const x = leftX + (cw / 2 - leftX) * (1 - slideProg)
+  const y = topY + (centerY - topY) * (1 - slideProg)
+  const titleSize = Math.round(cw * (slideProg > 0.5 ? 0.055 : 0.065))
+
+  if (slideProg < 0.3) {
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const grad = ctx.createLinearGradient(cw * 0.2, 0, cw * 0.8, 0)
+    grad.addColorStop(0, '#06b6d4')
+    grad.addColorStop(0.5, '#8b5cf6')
+    grad.addColorStop(1, '#ec4899')
+    ctx.font = `900 ${titleSize}px "PingFang SC", sans-serif`
+    ctx.shadowColor = 'rgba(139,92,246,0.5)'
+    ctx.shadowBlur = cw * 0.03
+    ctx.fillStyle = grad
+    ctx.fillText(text.slice(0, chars), cw / 2, centerY)
+  } else {
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.font = `900 ${titleSize}px "PingFang SC", sans-serif`
+    ctx.shadowColor = 'rgba(139,92,246,0.5)'
+    ctx.shadowBlur = cw * 0.025
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(text, leftX, y)
+  }
+
+  ctx.shadowBlur = 0
+  ctx.restore()
+}
+
+// ============================================================
+// 风格二：单个卡片（左侧文字，右侧图标）
+// ============================================================
+function drawCardStyle2(ctx, pt, index, cw, ch, alpha, entryProg) {
+  ctx.save()
+  ctx.globalAlpha = alpha
+
+  const padX = cw * 0.06
+  const cardTop = ch * 0.24
+  const cardH = ch * 0.54
+  const cardW = cw - padX * 2
+  const corner = cw * 0.025
+
+  const ease = 1 - Math.pow(1 - Math.min(1, entryProg), 3)
+  ctx.translate(0, (1 - ease) * cardH * 0.15)
+
+  const accentColors = ['#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#14b8a6']
+  const accent = accentColors[index % accentColors.length]
+
+  // 卡片背景 + 阴影
+  ctx.save()
+  drawRoundedRect(ctx, padX, cardTop, cardW, cardH, corner)
+  ctx.fillStyle = '#ffffff'
+  ctx.shadowColor = 'rgba(0,0,0,0.1)'
+  ctx.shadowBlur = cw * 0.025
+  ctx.shadowOffsetY = cw * 0.008
+  ctx.fill()
+  ctx.shadowBlur = 0
+
+  // 左侧彩色边条
+  drawRoundedRect(ctx, padX, cardTop, cw * 0.012, cardH, corner)
+  ctx.fillStyle = accent
+  ctx.fill()
+  ctx.restore()
+
+  // 序号圆
+  const numX = padX + cw * 0.05
+  const numY = cardTop + cardH * 0.14
+  const numR = cw * 0.038
+  ctx.beginPath()
+  ctx.arc(numX + numR, numY, numR, 0, Math.PI * 2)
+  ctx.fillStyle = accent
+  ctx.shadowColor = accent
+  ctx.shadowBlur = cw * 0.015
+  ctx.fill()
+  ctx.shadowBlur = 0
+  ctx.fillStyle = '#ffffff'
+  ctx.font = `700 ${Math.round(cw * 0.032)}px "PingFang SC", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(String(index + 1), numX + numR, numY)
+
+  // 关键词大字
+  const kwX = numX + numR * 2 + cw * 0.025
+  const kwY = numY - cw * 0.005
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 ${Math.round(cw * 0.052)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = '#1a1a2e'
+  ctx.shadowColor = 'rgba(0,0,0,0.08)'
+  ctx.shadowBlur = cw * 0.006
+  ctx.fillText(pt.label, kwX, kwY)
+  ctx.shadowBlur = 0
+
+  // 短说明
+  const shortY = kwY + cw * 0.068
+  ctx.font = `600 ${Math.round(cw * 0.03)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = accent
+  ctx.fillText(pt.short, kwX, shortY)
+
+  // 长解释（换行）
+  const descY = shortY + cw * 0.062
+  ctx.font = `400 ${Math.round(cw * 0.027)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = '#6B6860'
+  const maxW = cardW - cw * 0.06 - cw * 0.36
+  const descLines = wrapText(ctx, pt.desc, maxW)
+  descLines.slice(0, 4).forEach((line, li) => {
+    ctx.fillText(line, kwX, descY + li * cw * 0.036)
+  })
+
+  // 右侧图标
+  const iconX = cw - padX - cw * 0.22
+  const iconY = cardTop + cardH * 0.38
+  const iconR = cw * 0.1
+
+  ctx.beginPath()
+  ctx.arc(iconX + iconR, iconY, iconR, 0, Math.PI * 2)
+  const iconGrad = ctx.createRadialGradient(iconX + iconR, iconY - iconR * 0.3, 0, iconX + iconR, iconY, iconR)
+  iconGrad.addColorStop(0, accent + 'cc')
+  iconGrad.addColorStop(1, accent + '44')
+  ctx.fillStyle = iconGrad
+  ctx.shadowColor = accent
+  ctx.shadowBlur = cw * 0.02
+  ctx.fill()
+  ctx.shadowBlur = 0
+
+  drawIconSymbol(ctx, index, iconX + iconR, iconY, iconR * 0.5, accent)
+
+  ctx.restore()
+}
+
+function drawIconSymbol(ctx, index, cx, cy, r, color) {
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.lineWidth = Math.max(1.5, r * 0.15)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  const t = index % 8
+  if (t === 0) {
+    ctx.beginPath(); ctx.moveTo(cx - r * 0.35, cy); ctx.lineTo(cx - r * 0.05, cy + r * 0.35); ctx.lineTo(cx + r * 0.4, cy - r * 0.3); ctx.stroke()
+  } else if (t === 1) {
+    ctx.beginPath()
+    for (let i = 0; i < 5; i++) {
+      const oa = (i * 72 - 90) * Math.PI / 180
+      const ia = ((i * 72) + 36 - 90) * Math.PI / 180
+      ctx.lineTo(cx + Math.cos(oa) * r, cy + Math.sin(oa) * r)
+      ctx.lineTo(cx + Math.cos(ia) * r * 0.4, cy + Math.sin(ia) * r * 0.4)
+    }
+    ctx.closePath(); ctx.fillStyle = color; ctx.fill()
+  } else if (t === 2) {
+    ctx.beginPath(); ctx.moveTo(cx - r * 0.3, cy); ctx.lineTo(cx + r * 0.25, cy); ctx.moveTo(cx + r * 0.1, cy - r * 0.3); ctx.lineTo(cx + r * 0.3, cy); ctx.lineTo(cx + r * 0.1, cy + r * 0.3); ctx.stroke()
+  } else if (t === 3) {
+    ctx.beginPath(); ctx.moveTo(cx + r * 0.15, cy - r * 0.4); ctx.lineTo(cx - r * 0.15, cy + r * 0.1); ctx.lineTo(cx + r * 0.05, cy + r * 0.1); ctx.lineTo(cx - r * 0.15, cy + r * 0.4); ctx.lineTo(cx + r * 0.25, cy - r * 0.05); ctx.lineTo(cx - r * 0.05, cy - r * 0.05); ctx.closePath(); ctx.fillStyle = color; ctx.fill()
+  } else if (t === 4) {
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, r * 0.25, 0, Math.PI * 2); ctx.fill()
+  } else if (t === 5) {
+    ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.4); ctx.lineTo(cx + r * 0.3, cy); ctx.lineTo(cx + r * 0.1, cy); ctx.lineTo(cx + r * 0.1, cy + r * 0.4); ctx.lineTo(cx - r * 0.1, cy + r * 0.4); ctx.lineTo(cx - r * 0.1, cy); ctx.lineTo(cx - r * 0.3, cy); ctx.closePath(); ctx.fillStyle = color; ctx.fill()
+  } else if (t === 6) {
+    ctx.beginPath(); ctx.moveTo(cx, cy + r * 0.35); ctx.bezierCurveTo(cx - r * 0.6, cy, cx - r * 0.5, cy - r * 0.5, cx, cy - r * 0.2); ctx.bezierCurveTo(cx + r * 0.5, cy - r * 0.5, cx + r * 0.6, cy, cx, cy + r * 0.35); ctx.fillStyle = color; ctx.fill()
+  } else {
+    ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.4); ctx.lineTo(cx, cy + r * 0.4); ctx.moveTo(cx - r * 0.4, cy); ctx.lineTo(cx + r * 0.4, cy); ctx.stroke()
+  }
+  ctx.restore()
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = []
+  let current = ''
+  for (const char of text) {
+    const test = current + char
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current); current = char
+    } else { current = test }
+  }
+  if (current) lines.push(current)
+  return lines
+}
+
+// ============================================================
+// 风格二：Slogan 页面
+// ============================================================
+function drawMainTextStyle2(ctx, cw, ch, prog) {
+  const text = '少工作，多赚钱'
+  const sub1 = '以书为粮，以路为行'
+  const sub2 = '小福AI自由'
+
+  ctx.save()
+  const alpha = Math.min(1, prog * 2.5)
+  ctx.globalAlpha = alpha
+
+  const bounceT = Math.min(1, prog / 0.5)
+  const overshoot = bounceT < 1 ? bounceT * 1.2 : 1 - Math.sin((bounceT - 0.5) / 0.5 * Math.PI) * 0.15
+  const cx = cw / 2, cy = ch * 0.45
+
+  ctx.translate(cx, cy)
+  ctx.scale(overshoot, overshoot)
+  ctx.translate(-cx, -cy)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const mainSize = Math.round(cw * 0.1)
+  ctx.font = `900 ${mainSize}px "PingFang SC", sans-serif`
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+  ctx.lineWidth = cw * 0.004
+  ctx.shadowColor = 'rgba(139,92,246,0.9)'
+  ctx.shadowBlur = cw * 0.06
+  const grad = ctx.createLinearGradient(cx - cw * 0.3, 0, cx + cw * 0.3, 0)
+  grad.addColorStop(0, '#06b6d4')
+  grad.addColorStop(0.5, '#8b5cf6')
+  grad.addColorStop(1, '#ec4899')
+  ctx.fillStyle = grad
+  ctx.strokeText(text, cx, cy)
+  ctx.fillText(text, cx, cy)
+  ctx.shadowBlur = 0
+
+  ctx.globalAlpha = alpha * 0.9
+  const subSize = Math.round(cw * 0.036)
+  ctx.font = `700 ${subSize}px "PingFang SC", sans-serif`
+  ctx.fillStyle = '#e2e8f0'
+  ctx.shadowColor = 'rgba(139,92,246,0.5)'
+  ctx.shadowBlur = cw * 0.025
+  ctx.fillText(sub1, cx, cy + mainSize * 1.3)
+  ctx.shadowBlur = 0
+
+  ctx.globalAlpha = alpha * 0.7
+  ctx.font = `600 ${Math.round(cw * 0.028)}px "PingFang SC", sans-serif`
+  ctx.fillStyle = 'rgba(139,92,246,0.85)'
+  ctx.fillText(sub2, cx, cy + mainSize * 1.3 + subSize * 1.8)
+
+  ctx.restore()
 }
 
 // ============================================================
@@ -591,7 +1303,7 @@ async function convertWebMToMP4(webmBlob) {
 // ============================================================
 // 主组件
 // ============================================================
-export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpts = {} }) {
+export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpts = {}, animationStyle = 'chinese', mainStyle = 'chinese' }) {
   const canvasRef = useRef(null)
   const coverCanvasRef = useRef(null)
   const recorderRef = useRef(null)
@@ -604,7 +1316,14 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
 
   // 生成封面（9:16 竖屏）
   const generateCover = useCallback(() => {
-    const canvas = drawCover(data, shapeType, styleOpts)
+    let canvas
+    if (mainStyle === 'city') {
+      canvas = drawLandmarkCover(data, shapeType, styleOpts)
+    } else if (animationStyle === 'minimal') {
+      canvas = drawCoverStyle2(1080, 1920, data.title)
+    } else {
+      canvas = drawCover(data, shapeType, styleOpts)
+    }
     if (coverCanvasRef.current) {
       const previewCtx = coverCanvasRef.current.getContext('2d')
       const scale = Math.min(300 / canvas.width, 500 / canvas.height)
@@ -613,7 +1332,7 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
       previewCtx.drawImage(canvas, 0, 0, previewCtx.canvas.width, previewCtx.canvas.height)
     }
     return canvas
-  }, [data, shapeType, styleOpts])
+  }, [data, shapeType, styleOpts, animationStyle, mainStyle])
 
   const startRecording = useCallback(async () => {
     const canvas = canvasRef.current
@@ -660,15 +1379,24 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
 
     const n = data.points.length
     const titleEnd = 50 + data.title.length * 180
-    const slideEnd = titleEnd + 600
-    const gridAppear = slideEnd + 100
-    const cellGap = 1600, partGap = 600
-    const cs = data.points.map((_, i) => ({
-      label: gridAppear + i * cellGap,
-      short: gridAppear + i * cellGap + partGap,
-      desc:  gridAppear + i * cellGap + partGap * 2,
-    }))
-    const meltStart = cs[cs.length - 1].desc + 1200
+
+    let meltStart
+    if (animationStyle === 'minimal') {
+      const slideEnd2 = titleEnd + 500
+      const cardDur = 1800
+      const lastCardAppear = slideEnd2 + 200 + (n - 1) * cardDur
+      meltStart = lastCardAppear + 300
+    } else {
+      const slideEnd2 = titleEnd + 600
+      const gridAppear2 = slideEnd2 + 100
+      const cellGap = 1600, partGap = 600
+      const cs = data.points.map((_, i) => ({
+        label: gridAppear2 + i * cellGap,
+        short: gridAppear2 + i * cellGap + partGap,
+        desc:  gridAppear2 + i * cellGap + partGap * 2,
+      }))
+      meltStart = cs[cs.length - 1].desc + 1200
+    }
 
     setTimeout(() => {
       if (!meltSoundPlayed.current) {
@@ -692,6 +1420,7 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
     }
 
     const engine = new AnimEngine(canvas, data, {
+      animationStyle,
       onDone: () => {
         if (recorderRef.current && recorderRef.current.state !== 'inactive') {
           recorderRef.current.stop()
@@ -699,20 +1428,26 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
       },
       onProgress: (p) => setProgress(p),
     })
-    engine.updateCellStates = (now) => {
-      const t2 = now - engine.startTime
-      const cs2 = engine.getTimings().cells
-      engine.data.points.forEach((_, i) => {
-        if (t2 >= cs2[i].desc) engine.cellStates[i] = 3
-        else if (t2 >= cs2[i].short) engine.cellStates[i] = 2
-        else if (t2 >= cs2[i].label) engine.cellStates[i] = 1
-        else engine.cellStates[i] = 0
-      })
-      if (engine.startTime) checkSounds(engine)
+    if (animationStyle !== 'minimal') {
+      engine.updateCellStates = (now) => {
+        const t2 = now - engine.startTime
+        const cs2 = engine.getTimings().cells
+        engine.data.points.forEach((_, i) => {
+          if (t2 >= cs2[i].desc) engine.cellStates[i] = 3
+          else if (t2 >= cs2[i].short) engine.cellStates[i] = 2
+          else if (t2 >= cs2[i].label) engine.cellStates[i] = 1
+          else engine.cellStates[i] = 0
+        })
+        if (engine.startTime) checkSounds(engine)
+      }
+    } else {
+      // 风格二：每个卡片出现时播放音效
+      let prevCard = -1
+      engine.updateCellStates = () => {}
     }
     engineRef.current = engine
     engine.start()
-  }, [data])
+  }, [data, animationStyle])
 
   const handleDownloadVideo = () => {
     const blob = mp4Blob || recordedBlob
@@ -828,7 +1563,7 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
               border: '1px solid rgba(139,92,246,0.4)',
               color: 'rgba(168,85,247,0.9)', fontSize: '11px', fontWeight: '700',
               backdropFilter: 'blur(8px)',
-            }}>9:16 竖屏封面</div>
+            }}>9:16 {mainStyle === 'city' ? '城市地标' : (animationStyle === 'minimal' ? '简约' : '中国风')} 封面</div>
           </div>
 
           {/* 操作按钮 */}
