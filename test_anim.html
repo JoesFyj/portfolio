@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AI科技动画测试</title>
+<style>
+body { background: #000; margin: 0; display: flex; flex-direction: column; align-items: center; }
+canvas { border: 2px solid #333; margin-top: 10px; }
+#log { color: #0f0; font-family: monospace; font-size: 12px; margin-top: 10px; width: 1280px; height: 200px; overflow-y: auto; background: #111; padding: 8px; }
+</style>
+</head>
+<body>
+<canvas id="main" width="1280" height="720"></canvas>
+<div id="log"></div>
+<script>
+const log = document.getElementById('log');
+function l(msg) {
+  log.innerHTML += msg + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+const canvas = document.getElementById('main');
+const ctx = canvas.getContext('2d');
+
+const data = {
+  title: '测试动画标题',
+  points: [
+    { label: '第一个要点', desc: '这是第一点的详细描述内容' },
+    { label: '第二个要点', desc: '这是第二点的详细描述内容' },
+    { label: '第三个要点', desc: '这是第三点的详细描述内容' },
+  ]
+};
+
+function easeOutBack(x) {
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
+
+function drawTechParticles(c, cw, ch, t) {
+  c.save();
+  for (let i = 0; i < 60; i++) {
+    const sx = ((i * 137 + 23) % cw + t * 0.008 * (i % 5 + 1)) % cw;
+    const sy = ((i * 97 + 11) % ch + Math.sin(t / 2000 + i * 1.3) * 8) % ch;
+    const size = 0.5 + (i % 3) * 0.5;
+    const alpha = 0.06 + (i % 5) * 0.025;
+    c.globalAlpha = alpha;
+    c.fillStyle = i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#a855f7' : '#ffffff';
+    c.beginPath(); c.arc(sx, sy, size, 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+  c.restore();
+}
+
+function drawTechCardBounce(ctx, pt, index, x, y, w, h, progress, direction) {
+  const text = pt.label || '';
+  const desc = (pt.desc || '').slice(0, 50);
+  if (!text) return;
+
+  const dirs = [
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: -1 },
+    { dx: 1, dy: 0 },
+    { dx: 0, dy: 1 },
+  ];
+  const dir = dirs[direction % 4];
+  const offsetDist = 180;
+  const neonColor = index % 2 === 0 ? '#06b6d4' : '#a855f7';
+  const fontSize = Math.round(h * 0.4);
+  const descSize = Math.round(h * 0.22);
+
+  ctx.save();
+  ctx.font = `700 ${fontSize}px sans-serif`;
+
+  let totalW = 0;
+  const charWidths = [];
+  for (let ci = 0; ci < text.length; ci++) {
+    const cw2 = ctx.measureText(text[ci]).width;
+    charWidths.push(cw2);
+    totalW += cw2;
+  }
+
+  if (progress < 0.5) {
+    const p = progress / 0.5;
+    const ep = easeOutBack(Math.min(1, p * 1.2));
+    const staggerTotal = Math.min(0.4 + p * 1.8, 1);
+
+    for (let ci = 0; ci < text.length; ci++) {
+      const stagger = ci * 0.07;
+      const cp = Math.min(1, Math.max(0, staggerTotal - stagger + 0.05));
+      const bounce = Math.sin(cp * Math.PI) * (1 - cp);
+
+      const cx3 = x + w / 2 - totalW / 2 + (ci > 0 ? charWidths.slice(0, ci).reduce((a, b) => a + b, 0) + ci * 3 : 0);
+      const cy3 = y + h * 0.3 - bounce * 20;
+
+      const startX = cx3 + dir.dx * offsetDist * (1 - ep);
+      const startY = cy3 + dir.dy * offsetDist * (1 - ep);
+
+      ctx.save();
+      ctx.globalAlpha = cp;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = neonColor;
+      ctx.shadowBlur = cp * 14;
+      ctx.font = `700 ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text[ci], startX, startY);
+      ctx.restore();
+    }
+
+    if (p > 0.5) {
+      const dp = (p - 0.5) / 0.5;
+      ctx.save();
+      ctx.globalAlpha = dp * 0.7;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `400 ${descSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(desc, x + w / 2, y + h * 0.68);
+      ctx.restore();
+    }
+  } else {
+    const p = (progress - 0.5) / 0.5;
+    const ep = easeOutBack(p);
+
+    for (let ci = 0; ci < text.length; ci++) {
+      const cx3 = x + w / 2 - totalW / 2 + (ci > 0 ? charWidths.slice(0, ci).reduce((a, b) => a + b, 0) + ci * 3 : 0);
+      const cy3 = y + h * 0.3;
+      const bounce = Math.sin(p * Math.PI) * (1 - p);
+
+      const endX = cx3 + dir.dx * offsetDist;
+      const endY = cy3 + dir.dy * offsetDist;
+
+      const cx4 = cx3 + (endX - cx3) * ep;
+      const cy4 = cy3 + (endY - cy3) * ep - bounce * 15;
+
+      ctx.save();
+      ctx.globalAlpha = 1 - p * 0.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = neonColor;
+      ctx.shadowBlur = (1 - p) * 12;
+      ctx.font = `700 ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text[ci], cx4, cy4);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+// Simplified animation timing
+const titleLen = data.title.length;
+const coverDur = 1500;
+const titleDone = 1500 + titleLen * 120;
+const titleBounceDur = 800;
+const titleAtTop = titleDone + titleBounceDur;
+const titleStable = titleAtTop + 300;
+
+const n = data.points.length;
+const cardDur = 1700;
+const cardStartGap = 900;
+
+const cards = data.points.map((_, i) => ({
+  appear: titleStable + i * cardStartGap,
+  enterEnd: titleStable + i * cardStartGap + cardDur * 0.5,
+  exitStart: titleStable + i * cardStartGap + cardDur * 0.5,
+  exitEnd: titleStable + i * cardStartGap + cardDur,
+}));
+
+const lastCardExit = titleStable + (n - 1) * cardStartGap + cardDur;
+const staticStart = lastCardExit + 1200;
+const staticDur = 1800;
+const boomStart = staticStart + staticDur;
+const boomDur = 800;
+
+l('Timing:');
+l('coverDur=' + coverDur);
+l('titleAtTop=' + titleAtTop);
+l('titleStable=' + titleStable);
+l('card[0] appear=' + cards[0].appear);
+l('card[1] appear=' + cards[1].appear);
+l('card[2] appear=' + cards[2].appear);
+l('lastCardExit=' + lastCardExit);
+l('staticStart=' + staticStart);
+l('boomStart=' + boomStart);
+
+const cardW = canvas.width * 0.84;
+const cardH = canvas.height * 0.13;
+const cardX = canvas.width * 0.08;
+const cardY = canvas.height * 0.22;
+
+l('cardW=' + cardW + ' cardH=' + cardH + ' cardY=' + cardY);
+
+let startTime = null;
+
+function draw(now) {
+  if (!startTime) startTime = now;
+  const t = now - startTime;
+
+  // Background
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawTechParticles(ctx, canvas.width, canvas.height, t);
+
+  // Cover (fade in/out)
+  let coverAlpha = 0;
+  if (t < coverDur * 0.4) coverAlpha = t / (coverDur * 0.4);
+  else if (t < coverDur * 0.75) coverAlpha = 1;
+  else if (t < coverDur) coverAlpha = 1 - (t - coverDur * 0.75) / (coverDur * 0.25);
+  if (coverAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = coverAlpha;
+    ctx.fillStyle = '#1a1a3e';
+    const cx = canvas.width / 2, cy = canvas.height / 2;
+    ctx.fillRect(cx - 150, cy - 100, 300, 200);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('封面', cx, cy + 8);
+    ctx.restore();
+  }
+
+  // Title
+  const titleChars = Math.min(data.title.length, Math.max(0, Math.floor((t - 50) / 120)));
+  if (titleChars > 0) {
+    const titleText = data.title.slice(0, titleChars);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 15;
+    ctx.font = `bold 48px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(titleText, canvas.width / 2, canvas.height * 0.42);
+    ctx.restore();
+  }
+
+  // Bouncing cards
+  for (let i = 0; i < n; i++) {
+    const cd = cards[i];
+    if (t >= cd.appear && t < cd.exitEnd) {
+      const cardProg = Math.min(1, (t - cd.appear) / cardDur);
+      l(`t=${Math.round(t)} card[${i}] prog=${cardProg.toFixed(2)}`);
+      drawTechCardBounce(ctx, data.points[i], i, cardX, cardY, cardW, cardH, cardProg, i);
+    }
+  }
+
+  // Static display
+  if (t >= staticStart && t < boomStart) {
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('静态展示阶段', canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+  }
+
+  // Boom
+  if (t >= boomStart) {
+    const boomProg = Math.min(1, (t - boomStart) / boomDur);
+    ctx.save();
+    ctx.globalAlpha = boomProg;
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${40 + boomProg * 20}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('砰!', canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+  }
+
+  // Debug overlay
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.font = '16px monospace';
+  ctx.fillText(`t=${Math.round(t)}ms | coverAlpha=${coverAlpha.toFixed(2)}`, 10, 25);
+  ctx.fillText(`cards: ${cards.map(c => c.appear).join(', ')}`, 10, 45);
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

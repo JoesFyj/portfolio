@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>AI科技动画调试</title>
+<style>
+* { box-sizing: border-box; }
+body { background: #000; margin: 0; padding: 20px; font-family: sans-serif; }
+#container { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+canvas { border: 2px solid #333; }
+#log { color: #0f0; font-family: monospace; font-size: 11px; margin-top: 10px; width: 100%; height: 300px; overflow-y: auto; background: #111; padding: 8px; border: 1px solid #333; white-space: pre-wrap; }
+#info { color: #fff; margin-bottom: 10px; font-size: 14px; }
+button { padding: 10px 20px; background: #8b5cf6; color: #fff; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
+</style>
+</head>
+<body>
+<div id="info">等待测试...</div>
+<div id="container">
+  <canvas id="main" width="1280" height="720"></canvas>
+</div>
+<button onclick="runTest()">运行测试</button>
+<button onclick="window.location.reload()">重置</button>
+<div id="log"></div>
+
+<script>
+const logEl = document.getElementById('log');
+const infoEl = document.getElementById('info');
+function l(msg) {
+  logEl.textContent += new Date().toISOString().slice(11,23) + ' ' + msg + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+  console.log(msg);
+}
+
+// ============================================================
+// 模拟 React 组件的动画引擎
+// ============================================================
+
+const data = {
+  title: 'AI科技前沿进展',
+  points: [
+    { label: '大模型突破', desc: 'GPT-5和Claude4引领通用智能新纪元' },
+    { label: 'AI编程工具', desc: 'Cursor和Copilot提升开发者效率' },
+    { label: '视频生成', desc: 'Sora和Gen-3开创视频创作新时代' },
+    { label: '开源生态', desc: 'LLaMA和Qwen推动AI民主化进程' },
+  ]
+};
+
+// 动画参数（与 RecorderPlayer.jsx 一致）
+const titleLen = data.title.length;
+const coverDur = 1500;
+const titleDone = 1500 + titleLen * 120;
+const titleBounceDur = 800;
+const titleAtTop = titleDone + titleBounceDur;
+const titleStable = titleAtTop + 300;
+
+const n = data.points.length;
+const cardDur = 1700;
+const cardStartGap = 900;
+
+const cards = data.points.map((_, i) => ({
+  appear: titleStable + i * cardStartGap,
+  enterEnd: titleStable + i * cardStartGap + cardDur * 0.5,
+  exitStart: titleStable + i * cardStartGap + cardDur * 0.5,
+  exitEnd: titleStable + i * cardStartGap + cardDur,
+}));
+
+const lastCardExit = titleStable + (n - 1) * cardStartGap + cardDur;
+const staticStart = lastCardExit + 1200;
+const staticDur = 1800;
+const boomStart = staticStart + staticDur;
+const boomDur = 800;
+const expDur = 1000;
+const sloganDur = 2500;
+const endHold = 2200;
+const total = boomStart + boomDur + expDur + sloganDur + endHold;
+
+l('=== 时序参数 ===');
+l('coverDur=' + coverDur);
+l('titleDone=' + titleDone);
+l('titleStable=' + titleStable);
+l('card[0].appear=' + cards[0].appear + ' card[0].exitEnd=' + cards[0].exitEnd);
+l('lastCardExit=' + lastCardExit);
+l('staticStart=' + staticStart);
+l('boomStart=' + boomStart);
+l('total=' + total);
+
+function easeOutBack(x) {
+  const c1 = 1.70158, c3 = c1 + 1;
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+}
+
+function drawTechParticles(c, cw, ch, t) {
+  c.save();
+  for (let i = 0; i < 60; i++) {
+    const sx = ((i * 137 + 23) % cw + t * 0.008 * (i % 5 + 1)) % cw;
+    const sy = ((i * 97 + 11) % ch + Math.sin(t / 2000 + i * 1.3) * 8) % ch;
+    const size = 0.5 + (i % 3) * 0.5;
+    const alpha = 0.06 + (i % 5) * 0.025;
+    c.globalAlpha = alpha;
+    c.fillStyle = i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#a855f7' : '#ffffff';
+    c.beginPath(); c.arc(sx, sy, size, 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+  c.restore();
+}
+
+// drawTechCardFull 的简化版
+function drawTechCardFullSimple(ctx, pt, index, x, y, w, h, isNew) {
+  const r = 12;
+  const neonColor = index % 2 === 0 ? '#06b6d4' : '#a855f7';
+  const accentColor = index % 3 === 0 ? '#22d3ee' : index % 3 === 1 ? '#818cf8' : '#c084fc';
+
+  ctx.fillStyle = isNew ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.07)';
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
+
+  ctx.strokeStyle = neonColor;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = neonColor;
+  ctx.shadowBlur = isNew ? 16 : 8;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = accentColor;
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 10); ctx.lineTo(x + 36, y + 10); ctx.lineTo(x + 10, y + 36);
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = accentColor;
+  ctx.font = '700 11px sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('#' + (index + 1), x + 16, y + 44);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText(pt.label || '', x + 16, y + 62);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = '400 12px sans-serif';
+  ctx.fillText((pt.desc || pt.short || '').slice(0, 30), x + 16, y + 86);
+}
+
+// 完整的动画绘制（适配 1280×720）
+function drawFrame(ctx, cw, ch, t) {
+  // === 深空黑背景 ===
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0, 0, cw, ch);
+  drawTechParticles(ctx, cw, ch, t);
+
+  // === 封面预览（右下角 9:16 小窗）===
+  const previewW = cw * 0.38;
+  const previewH = previewW * (16 / 9);
+  const previewX = cw - previewW - 16;
+  const previewY = ch - previewH - 16;
+
+  let coverAlpha = 0;
+  if (t < coverDur * 0.4) coverAlpha = t / (coverDur * 0.4);
+  else if (t < coverDur * 0.75) coverAlpha = 1;
+  else if (t < coverDur) coverAlpha = 1 - (t - coverDur * 0.75) / (coverDur * 0.25);
+
+  if (coverAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = coverAlpha;
+    const cs = t < coverDur * 0.4 ? 0.6 + 0.4 * (t / (coverDur * 0.4)) : 1;
+    ctx.translate(previewX + previewW/2, previewY + previewH/2);
+    ctx.scale(cs, cs);
+    ctx.translate(-(previewX + previewW/2), -(previewY + previewH/2));
+    // 画一个模拟封面
+    ctx.fillStyle = '#1a1a3e';
+    ctx.fillRect(previewX, previewY, previewW, previewH);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('封面预览', previewX + previewW/2, previewY + previewH/2);
+    ctx.restore();
+  }
+
+  // === 主画面大标题打字机 ===
+  const titleChars = Math.min(data.title.length, Math.max(0, Math.floor((t - 50) / 120)));
+  if (titleChars > 0) {
+    const titleText = data.title.slice(0, titleChars);
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 20;
+    ctx.font = `900 ${Math.round(cw * 0.038)}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(titleText, cw * 0.06, ch * 0.06);
+    ctx.restore();
+  }
+
+  // === 副标题 ===
+  if (t >= titleStable - 300 && t < staticStart) {
+    const subAlpha = Math.min(1, (t - (titleStable - 300)) / 500) * 0.6;
+    ctx.save(); ctx.globalAlpha = subAlpha;
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = `${Math.round(cw * 0.02)}px sans-serif`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('AI 科技前沿', cw * 0.06, ch * 0.06 + cw * 0.048);
+    ctx.restore();
+  }
+
+  // === 音符跳动大字卡片 ===
+  const dirs = [
+    { dx: 1, dy: -1 },
+    { dx: -1, dy: -1 },
+    { dx: 0, dy: -1 },
+  ];
+
+  const cardAreaW = cw * 0.58;
+  const cardAreaX = cw * 0.06;
+  const cardRowH = ch * 0.28;
+  const cardGap = ch * 0.06;
+  const cardW2 = cardAreaW;
+  const cardH2 = cardRowH - cardGap;
+  const startY1 = ch * 0.2;
+  const startY2 = ch * 0.2 + cardRowH;
+
+  for (let i = 0; i < n; i++) {
+    const cd = cards[i];
+    if (t >= cd.appear && t < cd.exitEnd) {
+      const prog = Math.min(1, (t - cd.appear) / cardDur);
+      const cardY2 = i < 2 ? startY1 : startY2;
+      const dir = dirs[i % dirs.length];
+
+      const text = data.points[i].label || '';
+      const desc = (data.points[i].desc || '').slice(0, 30);
+      if (!text) continue;
+
+      const fontSize = Math.round(cw * 0.035);
+      const descSize = Math.round(cw * 0.018);
+      const neonColor = i % 2 === 0 ? '#06b6d4' : '#a855f7';
+
+      ctx.save();
+      ctx.font = `700 ${fontSize}px sans-serif`;
+
+      if (prog < 0.5) {
+        const p = prog / 0.5;
+        const ep = easeOutBack(Math.min(1, p * 1.2));
+        const offsetDist = cw * 0.25;
+        const bounceAmt = Math.sin(p * Math.PI) * (1 - p) * ch * 0.05;
+
+        const baseX = cardAreaX + cardW2 * 0.08;
+        const baseY = cardY2 + cardH2 * 0.5;
+
+        ctx.globalAlpha = Math.min(1, p * 1.4);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = neonColor;
+        ctx.shadowBlur = 16;
+        ctx.font = `700 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        // 每字错开
+        let cx = baseX;
+        for (let ci = 0; ci < text.length; ci++) {
+          const charW = ctx.measureText(text[ci]).width;
+          const stagger = ci * 0.06;
+          const cp = Math.min(1, Math.max(0, p * 1.5 - stagger));
+          const charBounce = Math.sin(cp * Math.PI) * (1 - cp);
+
+          const charX = cx + charW/2 + dir.dx * offsetDist * (1 - ep);
+          const charY = baseY + dir.dy * offsetDist * (1 - ep) - charBounce * ch * 0.04;
+
+          ctx.save();
+          ctx.globalAlpha = cp * Math.min(1, p * 1.4);
+          ctx.font = `700 ${fontSize}px sans-serif`;
+          ctx.fillText(text[ci], charX, charY);
+          ctx.restore();
+          cx += charW + 3;
+        }
+
+        // 描述淡入
+        if (p > 0.5) {
+          const dp = (p - 0.5) / 0.5;
+          ctx.globalAlpha = dp * 0.7;
+          ctx.fillStyle = 'rgba(255,255,255,0.7)';
+          ctx.font = `${descSize}px sans-serif`;
+          ctx.fillText(desc, baseX, baseY + fontSize * 1.2);
+        }
+      } else {
+        // 退场
+        const p = (prog - 0.5) / 0.5;
+        const ep = easeOutBack(p);
+        const offsetDist = cw * 0.25;
+
+        const baseX = cardAreaX + cardW2 * 0.08;
+        const baseY = cardY2 + cardH2 * 0.5;
+
+        ctx.globalAlpha = 1 - p * 0.5;
+        ctx.font = `700 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = neonColor;
+        ctx.shadowBlur = (1 - p) * 14;
+
+        let cx = baseX;
+        for (let ci = 0; ci < text.length; ci++) {
+          const charW = ctx.measureText(text[ci]).width;
+          const charBounce = Math.sin(p * Math.PI) * (1 - p) * ch * 0.03;
+
+          const charX = cx + charW/2 + dir.dx * offsetDist * ep;
+          const charY = baseY + dir.dy * offsetDist * ep - charBounce;
+
+          ctx.save();
+          ctx.globalAlpha = (1 - p * 0.5);
+          ctx.font = `700 ${fontSize}px sans-serif`;
+          ctx.fillText(text[ci], charX, charY);
+          ctx.restore();
+          cx += charW + 3;
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // === 静态展示 ===
+  if (t >= staticStart && t < boomStart) {
+    ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch);
+    drawTechParticles(ctx, cw, ch, t);
+
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 25;
+    ctx.font = `900 ${Math.round(cw * 0.05)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(data.title, cw / 2, ch * 0.12);
+    ctx.restore();
+
+    ctx.save(); ctx.globalAlpha = 0.5;
+    const lg2 = ctx.createLinearGradient(cw * 0.1, 0, cw * 0.9, 0);
+    lg2.addColorStop(0, 'transparent'); lg2.addColorStop(0.2, '#06b6d4');
+    lg2.addColorStop(0.8, '#a855f7'); lg2.addColorStop(1, 'transparent');
+    ctx.strokeStyle = lg2; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.22); ctx.lineTo(cw * 0.9, ch * 0.22); ctx.stroke(); ctx.restore();
+
+    const colW = cw * 0.2;
+    const tallH = ch * 0.28, shortH = ch * 0.18;
+    const gapX = cw * 0.02, gapY = ch * 0.025;
+    const gridStartY = ch * 0.26;
+    for (let i = 0; i < n; i++) {
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const cx3 = (cw - 4 * colW - 3 * gapX) / 2 + col * (colW + gapX);
+      const cy2 = gridStartY + row * (tallH + gapY);
+      const rh = i % 3 === 1 ? shortH : tallH;
+      ctx.save();
+      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, colW, rh, false);
+      ctx.restore();
+    }
+  }
+
+  // === 砰展开 ===
+  if (t >= boomStart) {
+    const boomProg = Math.min(1, (t - boomStart) / boomDur);
+
+    ctx.fillStyle = '#ffffff'; ctx.globalAlpha = boomProg * 0.2; ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch);
+    drawTechParticles(ctx, cw, ch, t);
+
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 25 * boomProg;
+    ctx.globalAlpha = boomProg;
+    ctx.font = `900 ${Math.round(cw * 0.05)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(data.title, cw / 2, ch * 0.12);
+    ctx.restore();
+
+    if (boomProg > 0.3) {
+      const lineProg = Math.min(1, (boomProg - 0.3) / 0.4);
+      ctx.save(); ctx.globalAlpha = lineProg * 0.5;
+      const lg3 = ctx.createLinearGradient(cw * 0.1, 0, cw * 0.9, 0);
+      lg3.addColorStop(0, 'transparent'); lg3.addColorStop(0.2, '#06b6d4');
+      lg3.addColorStop(0.8, '#a855f7'); lg3.addColorStop(1, 'transparent');
+      ctx.strokeStyle = lg3; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.22); ctx.lineTo(cw * 0.9, ch * 0.22); ctx.stroke(); ctx.restore();
+    }
+
+    const colW = cw * 0.2;
+    const tallH = ch * 0.28, shortH = ch * 0.18;
+    const gapX = cw * 0.02, gapY = ch * 0.025;
+    const gridStartY = ch * 0.26;
+    for (let i = 0; i < n; i++) {
+      const delay = i * 0.06;
+      const ip = Math.min(1, Math.max(0, (boomProg - delay) / (1 - delay)));
+      const ep2 = easeOutBack(ip);
+
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const cx3 = (cw - 4 * colW - 3 * gapX) / 2 + col * (colW + gapX);
+      const cy2 = gridStartY + row * (tallH + gapY);
+      const rh = i % 3 === 1 ? shortH : tallH;
+
+      ctx.save();
+      ctx.globalAlpha = ip;
+      ctx.translate(cx3 + colW/2, cy2 + rh/2);
+      ctx.scale(ep2, ep2);
+      ctx.translate(-(cx3 + colW/2), -(cy2 + rh/2));
+      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, colW, rh, i >= n - 3);
+      ctx.restore();
+    }
+  }
+
+  // === 爆炸 + Slogan ===
+  if (t >= boomStart + boomDur) {
+    const expProg = Math.min(1, (t - boomStart - boomDur) / expDur);
+    const sloganProg = Math.min(1, (t - boomStart - boomDur - expDur) / sloganDur);
+
+    // 爆炸
+    ctx.save();
+    const scale = 1 + expProg * 1.8;
+    const alpha2 = 1 - expProg;
+    ctx.globalAlpha = alpha2 * 0.8;
+    ctx.fillStyle = '#FAFAF6';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.globalAlpha = alpha2;
+    for (let i = 0; i < 24; i++) {
+      const angle = (i / 24) * Math.PI * 2;
+      const innerR = cw * 0.1 * scale;
+      const outerR = cw * (0.3 + expProg * 0.4) * scale;
+      ctx.strokeStyle = `hsl(${270 + i * 7.5}, 80%, ${70 - expProg * 30}%)`;
+      ctx.lineWidth = cw * 0.006 * (1 - expProg);
+      ctx.beginPath();
+      ctx.moveTo(cw/2 + Math.cos(angle) * innerR, ch/2 + Math.sin(angle) * innerR);
+      ctx.lineTo(cw/2 + Math.cos(angle) * outerR, ch/2 + Math.sin(angle) * outerR);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Slogan
+    if (sloganProg > 0) {
+      ctx.fillStyle = `rgba(8, 12, 20, ${Math.min(0.95, sloganProg * 1.5)})`;
+      ctx.fillRect(0, 0, cw, ch);
+
+      ctx.save();
+      const a2 = Math.min(1, sloganProg * 2.5);
+      ctx.globalAlpha = a2;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const bounceT = Math.min(1, sloganProg / 0.5);
+      const overshoot = bounceT < 1 ? bounceT * 1.2 : 1 - Math.sin((bounceT - 0.5) / 0.5 * Math.PI) * 0.15;
+      ctx.translate(cw/2, ch * 0.45); ctx.scale(overshoot, overshoot); ctx.translate(-cw/2, -ch * 0.45);
+
+      const grad = ctx.createLinearGradient(cw/2 - cw * 0.3, 0, cw/2 + cw * 0.3, 0);
+      grad.addColorStop(0, '#06b6d4');
+      grad.addColorStop(0.5, '#8b5cf6');
+      grad.addColorStop(1, '#ec4899');
+
+      ctx.font = `900 ${Math.round(cw * 0.1)}px sans-serif`;
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = cw * 0.004;
+      ctx.shadowColor = 'rgba(139,92,246,0.9)'; ctx.shadowBlur = cw * 0.06;
+      ctx.fillStyle = grad;
+      ctx.strokeText('少工作，多赚钱', cw/2, ch * 0.45);
+      ctx.fillText('少工作，多赚钱', cw/2, ch * 0.45);
+
+      ctx.font = `700 ${Math.round(cw * 0.036)}px sans-serif`;
+      ctx.fillStyle = '#e2e8f0';
+      ctx.shadowBlur = cw * 0.025;
+      ctx.fillText('以书为粮，以路为行', cw/2, ch * 0.45 + Math.round(cw * 0.1) * 1.3);
+
+      ctx.font = `${Math.round(cw * 0.028)}px sans-serif`;
+      ctx.fillStyle = 'rgba(139,92,246,0.85)';
+      ctx.fillText('小福AI自由', cw/2, ch * 0.45 + Math.round(cw * 0.1) * 1.3 + Math.round(cw * 0.036) * 1.8);
+      ctx.restore();
+    }
+  }
+
+  // 时间调试
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '14px monospace';
+  ctx.fillText(`t=${Math.round(t)}ms | total=${total}ms | ${(t/total*100).toFixed(1)}%`, 10, 20);
+  ctx.restore();
+}
+
+// ============================================================
+// 测试运行
+// ============================================================
+let startTime = null;
+let animId = null;
+let rafId = null;
+
+function runTest() {
+  l('=== 开始测试 ===');
+  const canvas = document.getElementById('main');
+  const ctx = canvas.getContext('2d');
+  startTime = null;
+
+  if (rafId) cancelAnimationFrame(rafId);
+
+  function animate(now) {
+    if (!startTime) {
+      startTime = now;
+      l('动画开始 t=0');
+    }
+    const t = now - startTime;
+
+    drawFrame(ctx, canvas.width, canvas.height, t);
+
+    if (t < total) {
+      rafId = requestAnimationFrame(animate);
+    } else {
+      l('动画结束，总时长=' + total + 'ms');
+    }
+  }
+
+  rafId = requestAnimationFrame(animate);
+  infoEl.textContent = '动画运行中... 画面应该在大约 ' + (total/1000).toFixed(1) + ' 秒后结束';
+}
+
+l('页面加载完成，canvas 尺寸: 1280 x 720');
+l('请点击 "运行测试" 按钮查看动画效果');
+</script>
+</body>
+</html>
