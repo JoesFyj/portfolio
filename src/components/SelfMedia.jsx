@@ -5,6 +5,7 @@ import {
   ChevronRight, Sparkles, Edit3, Volume2,
   RotateCcw, Lightbulb, ExternalLink
 } from 'lucide-react'
+import WechatFormatter from './WechatFormatter'
 
 const STEPS = [
   { key: 'topic',   label: '选题',    icon: Sparkles, desc: '从选题库读取' },
@@ -440,27 +441,13 @@ function StepContent({ step, state, text, muted, cardBg, cardBorder, inputBg, wr
 
   switch (step) {
     case 'write':
-      const typeLabels = { koubo: '口播稿', long: '长文章', short: '短文章' }
       return (
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <span className="text-xs px-2 py-1 rounded-md" style={{ background: 'rgba(217,119,6,0.1)', color: '#D97706' }}>
-              {typeLabels[state.articleType] || '口播稿'}
-            </span>
-            <span className="text-xs px-2 py-1 rounded-md" style={{ background: inputBg, border: `1px solid ${cardBorder}`, color: muted }}>
-              {state.wordCount || 0} 字
-            </span>
-          </div>
           <div className="p-3 rounded-xl" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
             <div className="text-xs mb-1" style={{ color: muted }}>文章标题</div>
             <div className="text-sm font-semibold" style={{ color: text }}>{state.title || '—'}</div>
           </div>
-          <div>
-            <div className="text-xs mb-1" style={{ color: muted }}>正文内容</div>
-            <div className="p-3 rounded-xl max-h-60 overflow-y-auto" style={{ background: inputBg, border: `1px solid ${cardBorder}` }}>
-              <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: muted }}>{state.content}</div>
-            </div>
-          </div>
+          <WechatFormatter article={state.content} />
         </div>
       )
 
