@@ -238,11 +238,13 @@ export default function PageGenerator() {
     })
       .then(res => res.json())
       .then(data => {
+        console.log('API返回:', data)
         if (data.error) {
           setError(data.error)
           setIsLoading(false)
           return
         }
+        console.log('设置summarizedData, showRecorder=true')
         setSummarizedData(data)
         setIsLoading(false)
         setShowRecorder(true)

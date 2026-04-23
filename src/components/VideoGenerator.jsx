@@ -432,6 +432,7 @@ class Engine {
 // 组件
 // ============================================================
 export default function VideoGenerator({ data, theme = 'deep-space', onClose }) {
+  console.log('VideoGenerator渲染, data:', data)
   const canvasRef = useRef(null)
   const engineRef = useRef(null)
   const recorderRef = useRef(null)
