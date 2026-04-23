@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import RecorderPlayer from './RecorderPlayer'
+import VideoGenerator from '../components/VideoGenerator'
 import {
   SHAPE_GROUPS,
   SHAPE_OPTIONS,
@@ -266,14 +267,16 @@ export default function PageGenerator() {
     <div className="min-h-screen" style={{ background: '#FAF9F6' }}>
       {/* 录屏全屏播放器 */}
       {showRecorder && summarizedData && (
-        <RecorderPlayer
-          data={summarizedData}
-          onClose={handleClose}
-          shapeType={mainStyle === 'city' ? selectedLandmark : mainStyle === 'ai' ? selectedAI : selectedShape}
-          styleOpts={styleOpts}
-          animationStyle={mainStyle === 'city' ? 'minimal' : mainStyle === 'ai' ? 'tech' : animationStyle}
-          mainStyle={mainStyle}
-        />
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(10,10,15,0.95)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)',
+        }}>
+          <VideoGenerator
+            data={summarizedData}
+            theme="deep-space"
+            onClose={handleClose}
+          />
+        </div>
       )}
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="mb-10 text-center">
