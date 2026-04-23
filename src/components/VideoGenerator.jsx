@@ -1,65 +1,52 @@
 /**
- * Video Generator - 短视频动画生成引擎 v2.0
+ * Video Generator v2.0 - 短视频动画引擎
  * 
- * 设计理念：
- * 1. 背景要有立体空间感（多层次、粒子、光影）
- * 2. 标题打字机效果 → 快速移到顶部
- * 3. 内容分组：序号 + 核心观点 + 简短解释
- * 4. 3种专业风格，可扩展
- * 5. 账号水印"小福AI自由"在角落
+ * 设计要点：
+ * - 立体空间感背景（粒子+网格+光晕）
+ * - 标题打字机 → 上移
+ * - 内容卡片：序号(大) + 小标题(中) + 解释(小)，字体递减
+ * - 交叉亮色配色
+ * - 装饰图形增加动态感
+ * - 水印"小福AI自由"
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react'
 
 // ============================================================
-// 主题配置
+// 主题
 // ============================================================
 const THEMES = {
-  // 深空蓝 - 科技感
   'deep-space': {
     name: '深空蓝',
-    background: ['#050510', '#0a1628', '#0f1f3d'],
-    particles: { color: '#00d4ff', count: 60, speed: 0.3 },
+    bg: ['#050510', '#0a1628', '#0f1f3d'],
     accent: '#00d4ff',
-    textPrimary: '#ffffff',
-    textSecondary: 'rgba(255,255,255,0.7)',
-    cardBg: 'rgba(255,255,255,0.08)',
-    cardBorder: 'rgba(0,212,255,0.3)',
-    glowColor: 'rgba(0,212,255,0.5)',
+    particles: { color: '#00d4ff', count: 60 },
+    glow: 'rgba(0,212,255,0.5)',
     watermark: 'rgba(0,212,255,0.25)',
+    cardColors: ['#00d4ff', '#f97316', '#10b981', '#ec4899', '#06b6d4'],
   },
-  
-  // 暮夜金 - 高端感
   'midnight-gold': {
     name: '暮夜金',
-    background: ['#0f0d1a', '#1a1428', '#2a1a2a'],
-    particles: { color: '#f0c040', count: 50, speed: 0.25 },
+    bg: ['#0f0d1a', '#1a1428', '#2a1a2a'],
     accent: '#f0c040',
-    textPrimary: '#ffffff',
-    textSecondary: 'rgba(255,255,255,0.75)',
-    cardBg: 'rgba(255,255,255,0.06)',
-    cardBorder: 'rgba(240,192,64,0.25)',
-    glowColor: 'rgba(240,192,64,0.4)',
+    particles: { color: '#f0c040', count: 50 },
+    glow: 'rgba(240,192,64,0.4)',
     watermark: 'rgba(240,192,64,0.2)',
+    cardColors: ['#f0c040', '#ef4444', '#10b981', '#8b5cf6', '#06b6d4'],
   },
-  
-  // 极光紫 - 梦幻感
   'aurora': {
     name: '极光紫',
-    background: ['#0a0512', '#1a0a28', '#0f1a2a'],
-    particles: { color: '#a855f7', count: 55, speed: 0.28 },
+    bg: ['#0a0512', '#1a0a28', '#0f1a2a'],
     accent: '#a855f7',
-    textPrimary: '#ffffff',
-    textSecondary: 'rgba(255,255,255,0.7)',
-    cardBg: 'rgba(168,85,247,0.1)',
-    cardBorder: 'rgba(168,85,247,0.3)',
-    glowColor: 'rgba(168,85,247,0.5)',
+    particles: { color: '#a855f7', count: 55 },
+    glow: 'rgba(168,85,247,0.5)',
     watermark: 'rgba(168,85,247,0.2)',
+    cardColors: ['#a855f7', '#ec4899', '#06b6d4', '#f97316', '#10b981'],
   },
 }
 
 // ============================================================
-// 绘图工具函数
+// 工具
 // ============================================================
 function roundedRect(ctx, x, y, w, h, r) {
   ctx.beginPath()
@@ -75,411 +62,376 @@ function roundedRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-// 缓动函数
 function easeOutBack(x) {
-  const c1 = 1.70158
-  const c3 = c1 + 1
+  const c1 = 1.70158, c3 = c1 + 1
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
 }
 
-function easeOutCubic(x) {
-  return 1 - Math.pow(1 - x, 3)
-}
-
-function easeInOutCubic(x) {
-  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
-}
+function easeOutCubic(x) { return 1 - Math.pow(1 - x, 3) }
 
 // ============================================================
 // 动画引擎
 // ============================================================
-class AnimationEngine {
-  constructor(canvas, data, themeKey = 'deep-space') {
+class Engine {
+  constructor(canvas, data, themeKey) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.data = data
-    this.theme = THEMES[themeKey]
+    this.theme = THEMES[themeKey] || THEMES['deep-space']
     this.cw = canvas.width
     this.ch = canvas.height
-    
     this.startTime = null
     this.animId = null
     this.onDone = null
     this.onProgress = null
-    
-    // 初始化粒子
-    this.particles = []
-    for (let i = 0; i < this.theme.particles.count; i++) {
-      this.particles.push({
-        x: Math.random() * this.cw,
-        y: Math.random() * this.ch,
-        vx: (Math.random() - 0.5) * this.theme.particles.speed,
-        vy: (Math.random() - 0.5) * this.theme.particles.speed,
-        size: 0.5 + Math.random() * 2,
-        alpha: 0.2 + Math.random() * 0.4,
-      })
-    }
-    
-    // 计算时间线
-    this.calculateTimeline()
+
+    // 粒子
+    this.particles = Array.from({ length: this.theme.particles.count }, () => ({
+      x: Math.random() * this.cw,
+      y: Math.random() * this.ch,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      size: 0.5 + Math.random() * 2,
+      alpha: 0.15 + Math.random() * 0.35,
+    }))
+
+    this.calcTimeline()
   }
-  
-  calculateTimeline() {
-    // 时间线设计（毫秒）
-    // 0-800: 背景建立
-    // 800-3500: 标题打字机
-    // 3500-4200: 标题上移
-    // 4200-18000: 内容展示（每条约2秒）
-    // 18000-20000: 收尾
-    
+
+  calcTimeline() {
     const titleLen = (this.data.title || '').length
-    const points = this.data.points || []
-    
-    this.timeline = {
-      bgEstablish: 800,
-      titleStart: 800,
-      titleEnd: 800 + titleLen * 80, // 每字80ms
-      titleMoveEnd: 800 + titleLen * 80 + 700,
-      contentStart: 800 + titleLen * 80 + 700 + 200,
-      contentItemDuration: 2200, // 每条内容展示时间
-      contentEnd: 800 + titleLen * 80 + 700 + 200 + points.length * 2200,
-      settleEnd: 800 + titleLen * 80 + 700 + 200 + points.length * 2200 + 2000,
+    const pts = this.data.points || []
+    const t = {
+      bgReady: 600,
+      titleStart: 600,
+      titleEnd: 600 + titleLen * 90,
+      titleMoveEnd: 600 + titleLen * 90 + 600,
+      contentStart: 600 + titleLen * 90 + 600 + 200,
+      itemDur: 2400,
     }
-    
-    this.timeline.total = this.timeline.settleEnd
+    t.contentEnd = t.contentStart + pts.length * t.itemDur
+    t.endStart = t.contentEnd
+    t.total = t.contentEnd + 2500
+    this.tl = t
   }
-  
-  // ============================================================
-  // 绘制背景
-  // ============================================================
-  drawBackground(t) {
+
+  // ---- 背景 ----
+  drawBg(t) {
     const { ctx, cw, ch, theme } = this
-    const [bg1, bg2, bg3] = theme.background
-    
-    // 多层渐变背景（模拟深度）
-    const grad1 = ctx.createLinearGradient(0, 0, 0, ch)
-    grad1.addColorStop(0, bg1)
-    grad1.addColorStop(0.5, bg2)
-    grad1.addColorStop(1, bg3)
-    ctx.fillStyle = grad1
-    ctx.fillRect(0, 0, cw, ch)
-    
-    // 径向光晕（中心亮）
-    const glowGrad = ctx.createRadialGradient(cw/2, ch*0.4, 0, cw/2, ch*0.4, cw*0.7)
-    glowGrad.addColorStop(0, theme.glowColor)
-    glowGrad.addColorStop(0.5, 'rgba(0,0,0,0)')
-    glowGrad.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = glowGrad
-    ctx.fillRect(0, 0, cw, ch)
-    
-    // 粒子动画
+    const [b1, b2, b3] = theme.bg
+
+    // 渐变
+    const g = ctx.createLinearGradient(0, 0, 0, ch)
+    g.addColorStop(0, b1); g.addColorStop(0.5, b2); g.addColorStop(1, b3)
+    ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch)
+
+    // 中心光晕
+    const rg = ctx.createRadialGradient(cw / 2, ch * 0.35, 0, cw / 2, ch * 0.35, cw * 0.65)
+    rg.addColorStop(0, theme.glow); rg.addColorStop(1, 'transparent')
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, cw, ch)
+
+    // 粒子
     this.particles.forEach(p => {
-      p.x += p.vx
-      p.y += p.vy
-      if (p.x < 0) p.x = cw
-      if (p.x > cw) p.x = 0
-      if (p.y < 0) p.y = ch
-      if (p.y > ch) p.y = 0
-      
-      // 脉冲效果
-      const pulse = 0.5 + 0.5 * Math.sin(t / 1000 + p.x * 0.01)
-      
+      p.x += p.vx; p.y += p.vy
+      if (p.x < 0) p.x = cw; if (p.x > cw) p.x = 0
+      if (p.y < 0) p.y = ch; if (p.y > ch) p.y = 0
+      const pulse = 0.5 + 0.5 * Math.sin(t / 1200 + p.x * 0.005)
       ctx.globalAlpha = p.alpha * pulse
       ctx.fillStyle = theme.particles.color
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-      ctx.fill()
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill()
     })
     ctx.globalAlpha = 1
-    
-    // 深度网格线（远处淡化）
-    ctx.strokeStyle = `${theme.accent}10`
-    ctx.lineWidth = 1
-    const gridSize = 80
-    const offsetY = (t * 0.02) % gridSize
-    
-    for (let y = -gridSize + offsetY; y < ch + gridSize; y += gridSize) {
-      ctx.globalAlpha = 0.08 * (1 - y / ch)
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(cw, y)
-      ctx.stroke()
+
+    // 透视网格
+    ctx.strokeStyle = `${theme.accent}08`; ctx.lineWidth = 1
+    for (let y = 0; y < ch; y += 100) {
+      ctx.globalAlpha = 0.06 * (1 - y / ch)
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke()
     }
-    
-    for (let x = 0; x < cw; x += gridSize) {
-      ctx.globalAlpha = 0.05
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, ch)
-      ctx.stroke()
+    for (let x = 0; x < cw; x += 100) {
+      ctx.globalAlpha = 0.04
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke()
     }
     ctx.globalAlpha = 1
   }
-  
-  // ============================================================
-  // 绘制水印
-  // ============================================================
+
+  // ---- 水印 ----
   drawWatermark() {
     const { ctx, cw, ch, theme } = this
-    
-    ctx.save()
-    ctx.globalAlpha = 0.4
+    ctx.save(); ctx.globalAlpha = 0.35
     ctx.fillStyle = theme.watermark
-    ctx.font = '600 18px "PingFang SC", sans-serif'
-    ctx.textAlign = 'right'
-    ctx.textBaseline = 'bottom'
-    ctx.fillText('小福AI自由', cw - 24, ch - 20)
+    ctx.font = '600 20px "PingFang SC", sans-serif'
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'
+    ctx.fillText('小福AI自由', cw - 28, ch - 24)
     ctx.restore()
   }
-  
-  // ============================================================
-  // 绘制标题
-  // ============================================================
+
+  // ---- 标题 ----
   drawTitle(t) {
-    const { ctx, cw, ch, theme, timeline, data } = this
+    const { ctx, cw, ch, theme, tl, data } = this
     const title = data.title || ''
-    
-    if (t < timeline.titleStart) return
-    
-    // 打字机阶段
-    if (t < timeline.titleEnd) {
-      const chars = Math.floor((t - timeline.titleStart) / 80)
-      const displayText = title.slice(0, chars)
-      const currentChar = title[chars]
-      
-      // 在正中央绘制
-      const fontSize = 64
+    if (t < tl.titleStart) return
+
+    ctx.save()
+
+    if (t < tl.titleEnd) {
+      // === 打字机阶段 ===
+      const chars = Math.floor((t - tl.titleStart) / 90)
+      const fontSize = 60
       ctx.font = `900 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      
-      // 主文字
-      ctx.fillStyle = theme.textPrimary
-      ctx.shadowColor = theme.glowColor
-      ctx.shadowBlur = 30
-      
-      // 逐字绘制，带缩放效果
-      let x = cw / 2 - ctx.measureText(displayText).width / 2
-      for (let i = 0; i < displayText.length; i++) {
-        const char = displayText[i]
-        const charProgress = Math.min(1, (t - timeline.titleStart - i * 80) / 150)
-        const scale = easeOutBack(charProgress)
-        
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+
+      // 逐字带弹性
+      let totalW = 0
+      const charWidths = []
+      for (let i = 0; i < title.length; i++) {
+        const w = ctx.measureText(title[i]).width
+        charWidths.push(w); totalW += w
+      }
+
+      let x = cw / 2 - totalW / 2
+      for (let i = 0; i < Math.min(chars, title.length); i++) {
+        const charProgress = i < chars - 1 ? 1 : Math.min(1, (t - tl.titleStart - i * 90) / 180)
+        const scale = i < chars - 1 ? 1 : easeOutBack(charProgress)
+
         ctx.save()
-        ctx.translate(x + ctx.measureText(char).width / 2, ch / 2)
+        ctx.translate(x + charWidths[i] / 2, ch / 2)
         ctx.scale(scale, scale)
-        ctx.translate(-(x + ctx.measureText(char).width / 2), -(ch / 2))
-        ctx.fillText(char, x, ch / 2)
+        ctx.translate(-(x + charWidths[i] / 2), -(ch / 2))
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = theme.glow; ctx.shadowBlur = 25
+        ctx.fillText(title[i], x, ch / 2)
         ctx.restore()
-        
-        x += ctx.measureText(char).width
+        x += charWidths[i]
       }
-      
-      // 光标闪烁
-      if (Math.floor(t / 400) % 2 === 0) {
-        const cursorX = x + 5
+
+      // 光标
+      if (Math.floor(t / 400) % 2 === 0 && chars < title.length) {
         ctx.fillStyle = theme.accent
-        ctx.fillRect(cursorX, ch / 2 - fontSize / 2, 3, fontSize)
+        ctx.fillRect(x + 4, ch / 2 - fontSize / 2 + 5, 3, fontSize - 10)
       }
-      
-      ctx.shadowBlur = 0
     }
-    
-    // 移动到顶部阶段
-    else if (t < timeline.titleMoveEnd) {
-      const moveProgress = easeOutCubic((t - timeline.titleEnd) / (timeline.titleMoveEnd - timeline.titleEnd))
-      
-      const startY = ch / 2
-      const endY = 90
-      const currentY = startY + (endY - startY) * moveProgress
-      
-      const startFontSize = 64
-      const endFontSize = 42
-      const currentFontSize = startFontSize + (endFontSize - startFontSize) * moveProgress
-      
-      ctx.font = `900 ${Math.round(currentFontSize)}px "PingFang SC", "Microsoft YaHei", sans-serif`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = theme.textPrimary
-      ctx.shadowColor = theme.glowColor
-      ctx.shadowBlur = 20
-      ctx.fillText(title, cw / 2, currentY)
-      ctx.shadowBlur = 0
-    }
-    
-    // 稳定在顶部
-    else {
-      ctx.font = '900 42px "PingFang SC", "Microsoft YaHei", sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = theme.textPrimary
-      ctx.shadowColor = theme.glowColor
-      ctx.shadowBlur = 15
-      ctx.fillText(title, cw / 2, 90)
-      ctx.shadowBlur = 0
-      
-      // 标题下装饰线
-      const lineWidth = Math.min(400, ctx.measureText(title).width + 60)
-      ctx.strokeStyle = theme.accent
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(cw / 2 - lineWidth / 2, 130)
-      ctx.lineTo(cw / 2 + lineWidth / 2, 130)
-      ctx.stroke()
-    }
-  }
-  
-  // ============================================================
-  // 绘制内容卡片
-  // ============================================================
-  drawContent(t) {
-    const { ctx, cw, ch, theme, timeline, data } = this
-    const points = data.points || []
-    
-    if (t < timeline.contentStart) return
-    
-    const itemWidth = cw - 80
-    const itemHeight = 140
-    const itemGap = 20
-    const startY = 180
-    
-    points.forEach((point, index) => {
-      const itemStart = timeline.contentStart + index * timeline.contentItemDuration
-      const itemEnd = itemStart + timeline.contentItemDuration
-      
-      if (t < itemStart) return
-      
-      // 入场动画
-      let alpha = 1
-      let offsetY = 0
-      let scale = 1
-      
-      if (t < itemStart + 400) {
-        // 入场：从下往上滑入
-        const progress = easeOutCubic((t - itemStart) / 400)
-        offsetY = (1 - progress) * 50
-        alpha = progress
-        scale = 0.95 + progress * 0.05
-      }
-      
-      const y = startY + index * (itemHeight + itemGap) + offsetY
-      
-      ctx.save()
-      ctx.globalAlpha = alpha
-      
-      // 卡片背景（玻璃态）
-      const cardX = 40
-      roundedRect(ctx, cardX, y, itemWidth, itemHeight, 12)
-      ctx.fillStyle = theme.cardBg
-      ctx.fill()
-      ctx.strokeStyle = theme.cardBorder
-      ctx.lineWidth = 1
-      ctx.stroke()
-      
-      // 序号圆圈
-      const numX = cardX + 45
-      const numY = y + itemHeight / 2
-      const numR = 28
-      
-      ctx.beginPath()
-      ctx.arc(numX, numY, numR, 0, Math.PI * 2)
-      ctx.fillStyle = theme.accent
-      ctx.shadowColor = theme.glowColor
-      ctx.shadowBlur = 15
-      ctx.fill()
-      ctx.shadowBlur = 0
-      
-      // 序号数字
+    else if (t < tl.titleMoveEnd) {
+      // === 上移阶段 ===
+      const p = easeOutCubic((t - tl.titleEnd) / (tl.titleMoveEnd - tl.titleEnd))
+      const y = ch / 2 + (100 - ch / 2) * p
+      const fs = 60 + (40 - 60) * p
+      ctx.font = `900 ${Math.round(fs)}px "PingFang SC", "Microsoft YaHei", sans-serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillStyle = '#ffffff'
-      ctx.font = '900 28px "PingFang SC", sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(String(index + 1), numX, numY)
-      
-      // 核心观点（大字）
-      const insight = point.label || point.kw || ''
-      ctx.fillStyle = theme.textPrimary
-      ctx.font = '800 32px "PingFang SC", "Microsoft YaHei", sans-serif'
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(insight.slice(0, 12), cardX + 90, y + 45)
-      
-      // 解释说明（小字）
-      const desc = point.desc || point.short || ''
-      ctx.fillStyle = theme.textSecondary
-      ctx.font = '400 24px "PingFang SC", sans-serif'
-      ctx.fillText(desc.slice(0, 35), cardX + 90, y + 95)
-      
+      ctx.shadowColor = theme.glow; ctx.shadowBlur = 20
+      ctx.fillText(title, cw / 2, y)
+    }
+    else {
+      // === 稳定顶部 ===
+      ctx.font = '900 40px "PingFang SC", "Microsoft YaHei", sans-serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#ffffff'
+      ctx.shadowColor = theme.glow; ctx.shadowBlur = 12
+      ctx.fillText(title, cw / 2, 100)
+      // 装饰线
+      const lw = Math.min(380, ctx.measureText(title).width + 50)
+      ctx.strokeStyle = theme.accent; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(cw / 2 - lw / 2, 140); ctx.lineTo(cw / 2 + lw / 2, 140); ctx.stroke()
+    }
+
+    ctx.shadowBlur = 0; ctx.restore()
+  }
+
+  // ---- 内容卡片 ----
+  drawCards(t) {
+    const { ctx, cw, ch, theme, tl, data } = this
+    const pts = data.points || []
+    if (t < tl.contentStart) return
+
+    const cardX = 50
+    const cardW = cw - 100
+    const cardH = 200
+    const gap = 30
+    const startY = 190
+    const colors = theme.cardColors
+
+    pts.forEach((pt, i) => {
+      const itemStart = tl.contentStart + i * tl.itemDur
+      if (t < itemStart) return
+
+      const localT = t - itemStart
+      const color = colors[i % colors.length]
+
+      // 入场动画
+      let alpha = 1, yOff = 0, scale = 1
+      if (localT < 400) {
+        const p = easeOutCubic(localT / 400)
+        alpha = p; yOff = (1 - p) * 40; scale = 0.96 + p * 0.04
+      }
+
+      const y = startY + i * (cardH + gap) + yOff
+
+      ctx.save(); ctx.globalAlpha = alpha
+
+      // 卡片背景（玻璃态）
+      roundedRect(ctx, cardX, y, cardW, cardH, 16)
+      ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fill()
+      ctx.strokeStyle = `${color}40`; ctx.lineWidth = 1.5; ctx.stroke()
+
+      // 左侧竖线
+      ctx.fillStyle = color
+      roundedRect(ctx, cardX, y, 6, cardH, 3); ctx.fill()
+
+      // ---- 序号圆圈（最大，最醒目）----
+      const numX = cardX + 65
+      const numY = y + 65
+      const numR = 40
+
+      ctx.shadowColor = color; ctx.shadowBlur = 20
+      ctx.beginPath(); ctx.arc(numX, numY, numR, 0, Math.PI * 2)
+      ctx.fillStyle = color; ctx.fill()
+      ctx.shadowBlur = 0
+
+      // 序号文字
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '900 36px "PingFang SC", sans-serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(String(i + 1), numX, numY)
+
+      // ---- 小标题（中等字体，亮色）----
+      const kw = pt.label || pt.kw || ''
+      const kwX = numX + numR + 30
+      const kwY = y + 55
+
+      ctx.fillStyle = color
+      ctx.shadowColor = color; ctx.shadowBlur = 8
+      ctx.font = '800 38px "PingFang SC", "Microsoft YaHei", sans-serif'
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+      ctx.fillText(kw.slice(0, 10), kwX, kwY)
+      ctx.shadowBlur = 0
+
+      // ---- 解释说明（小字体，可读）----
+      const desc = pt.desc || pt.short || ''
+      const descX = kwX
+      const descY = y + 110
+
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'
+      ctx.font = '400 26px "PingFang SC", sans-serif'
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+      // 自动换行
+      const maxW = cardW - (kwX - cardX) - 30
+      this._wrapText(ctx, desc.slice(0, 40), descX, descY, maxW, 34)
+
+      // ---- 装饰图形 ----
+      this._drawDeco(ctx, i, color, alpha, localT, cardX, y, cardW, cardH)
+
       ctx.restore()
     })
   }
-  
-  // ============================================================
-  // 绘制结束画面
-  // ============================================================
-  drawEnding(t) {
-    const { ctx, cw, ch, theme, timeline } = this
-    
-    if (t < timeline.contentEnd) return
-    
-    const settleProgress = Math.min(1, (t - timeline.contentEnd) / 2000)
-    
-    // 淡出效果
+
+  _wrapText(ctx, text, x, y, maxW, lineH) {
+    let line = '', ly = y
+    for (const ch of text) {
+      const test = line + ch
+      if (ctx.measureText(test).width > maxW && line) {
+        ctx.fillText(line, x, ly); line = ch; ly += lineH
+      } else { line = test }
+    }
+    if (line) ctx.fillText(line, x, ly)
+  }
+
+  // 装饰图形
+  _drawDeco(ctx, idx, color, alpha, localT, cx, cy, cw, ch) {
     ctx.save()
-    ctx.globalAlpha = settleProgress * 0.3
-    ctx.fillStyle = theme.background[0]
-    ctx.fillRect(0, 0, cw, ch)
+
+    // 右侧动态图形
+    const rx = cx + cw - 60
+    const ry = cy + ch / 2
+    const pulse = 0.3 + 0.15 * Math.sin(localT / 500)
+    const size = 18 + 6 * Math.sin(localT / 400)
+
+    // 外圈
+    ctx.globalAlpha = alpha * pulse * 0.4
+    ctx.strokeStyle = color; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.arc(rx, ry, size + 12, 0, Math.PI * 2); ctx.stroke()
+
+    // 内圈
+    ctx.globalAlpha = alpha * pulse
+    ctx.fillStyle = color
+    ctx.beginPath(); ctx.arc(rx, ry, size, 0, Math.PI * 2); ctx.fill()
+
+    // 旋转三角形
+    const angle = localT / 1500
+    ctx.globalAlpha = alpha * 0.2
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5
+    ctx.beginPath()
+    for (let j = 0; j < 3; j++) {
+      const a = angle + j * Math.PI * 2 / 3
+      const px = rx + Math.cos(a) * (size + 25)
+      const py = ry + Math.sin(a) * (size + 25)
+      j === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)
+    }
+    ctx.closePath(); ctx.stroke()
+
+    // 左上角小装饰线
+    ctx.globalAlpha = alpha * 0.5
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineCap = 'round'
+    const lineLen = Math.min(30, localT / 10)
+    ctx.beginPath(); ctx.moveTo(cx + 15, cy + 15); ctx.lineTo(cx + 15 + lineLen, cy + 15); ctx.stroke()
+    ctx.beginPath(); ctx.moveTo(cx + 15, cy + 15); ctx.lineTo(cx + 15, cy + 15 + lineLen); ctx.stroke()
+
     ctx.restore()
   }
-  
-  // ============================================================
-  // 主绘制循环
-  // ============================================================
-  draw(timestamp) {
-    if (!this.startTime) this.startTime = timestamp
-    const t = timestamp - this.startTime
-    
-    const { ctx, cw, ch, timeline } = this
-    
-    // 清空画布
-    ctx.clearRect(0, 0, cw, ch)
-    
-    // 按顺序绘制
-    this.drawBackground(t)
+
+  // ---- 结尾 ----
+  drawEnding(t) {
+    const { ctx, cw, ch, theme, tl, data } = this
+    if (t < tl.endStart) return
+    const p = Math.min(1, (t - tl.endStart) / 2000)
+
+    // 渐变遮罩
+    ctx.save(); ctx.globalAlpha = p * 0.5
+    ctx.fillStyle = theme.bg[0]; ctx.fillRect(0, 0, cw, ch)
+    ctx.restore()
+
+    // 标题重现
+    if (p > 0.15 && p < 0.85) {
+      const a = Math.min(1, (p - 0.15) / 0.25) * Math.min(1, (0.85 - p) / 0.2)
+      ctx.save(); ctx.globalAlpha = a
+      ctx.font = '900 52px "PingFang SC", "Microsoft YaHei", sans-serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#ffffff'; ctx.shadowColor = theme.glow; ctx.shadowBlur = 25
+      ctx.fillText(data.title || '', cw / 2, ch / 2 - 30)
+      ctx.shadowBlur = 0
+      ctx.font = '500 24px "PingFang SC", sans-serif'
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.fillText('— 小福AI自由 —', cw / 2, ch / 2 + 30)
+      ctx.restore()
+    }
+  }
+
+  // ---- 主循环 ----
+  draw(ts) {
+    if (!this.startTime) this.startTime = ts
+    const t = ts - this.startTime
+    this.ctx.clearRect(0, 0, this.cw, this.ch)
+
+    this.drawBg(t)
     this.drawWatermark()
     this.drawTitle(t)
-    this.drawContent(t)
+    this.drawCards(t)
     this.drawEnding(t)
-    
-    // 进度回调
-    const progress = Math.min(100, Math.round(t / timeline.total * 100))
-    if (this.onProgress) this.onProgress(progress)
-    
-    // 检查是否结束
-    if (t >= timeline.total) {
-      if (this.onDone) this.onDone()
-      return
-    }
-    
-    // 继续动画
-    this.animId = requestAnimationFrame(ts => this.draw(ts))
+
+    if (this.onProgress) this.onProgress(Math.min(100, Math.round(t / this.tl.total * 100)))
+
+    if (t >= this.tl.total) { this.onDone?.(); return }
+    this.animId = requestAnimationFrame(ts2 => this.draw(ts2))
   }
-  
-  start() {
-    this.animId = requestAnimationFrame(ts => this.draw(ts))
-  }
-  
-  stop() {
-    if (this.animId) {
-      cancelAnimationFrame(this.animId)
-    }
-  }
+
+  start() { this.animId = requestAnimationFrame(ts => this.draw(ts)) }
+  stop() { if (this.animId) cancelAnimationFrame(this.animId) }
 }
 
 // ============================================================
-// 主组件
+// 组件
 // ============================================================
-export default function VideoGenerator({ data, theme = 'deep-space', onClose, onProgress, onDone }) {
+export default function VideoGenerator({ data, theme = 'deep-space', onClose }) {
   const canvasRef = useRef(null)
   const engineRef = useRef(null)
   const recorderRef = useRef(null)
@@ -487,289 +439,127 @@ export default function VideoGenerator({ data, theme = 'deep-space', onClose, on
   const [isRecording, setIsRecording] = useState(false)
   const [progress, setProgress] = useState(0)
   const [recordedBlob, setRecordedBlob] = useState(null)
-  const [mp4Blob, setMp4Blob] = useState(null)
-  const [converting, setConverting] = useState(false)
-  
+
   const currentTheme = THEMES[theme] || THEMES['deep-space']
-  
-  const startAnimation = useCallback((record = false) => {
+
+  const startAnim = useCallback((record = false) => {
     const canvas = canvasRef.current
     if (!canvas || !data) return
-    
-    // 设置画布尺寸（9:16竖屏）
-    canvas.width = 1080
-    canvas.height = 1920
-    
-    const engine = new AnimationEngine(canvas, data, theme)
+    canvas.width = 1080; canvas.height = 1920
+
+    const engine = new Engine(canvas, data, theme)
     engineRef.current = engine
-    
-    engine.onProgress = (p) => {
-      setProgress(p)
-      if (onProgress) onProgress(p)
-    }
-    
+
+    engine.onProgress = setProgress
     engine.onDone = () => {
       setIsPlaying(false)
-      if (record && recorderRef.current) {
+      if (record && recorderRef.current?.state !== 'inactive') {
         recorderRef.current.stop()
-      } else {
-        if (onDone) onDone()
       }
     }
-    
-    // 开始录制（如果需要）
+
     if (record) {
       const stream = canvas.captureStream(30)
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-        ? 'video/webm;codecs=vp9' 
-        : 'video/webm'
-      const recorder = new MediaRecorder(stream, { mimeType })
+      const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+      const rec = new MediaRecorder(stream, { mimeType: mime })
       const chunks = []
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data)
-      }
-      
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: mimeType })
-        setRecordedBlob(blob)
+      rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
+      rec.onstop = () => {
+        setRecordedBlob(new Blob(chunks, { type: mime }))
         setIsRecording(false)
-        if (onDone) onDone()
       }
-      
-      recorderRef.current = recorder
-      recorder.start(100)
+      recorderRef.current = rec
+      rec.start(100)
       setIsRecording(true)
     }
-    
+
     engine.start()
     setIsPlaying(true)
-  }, [data, theme, onProgress, onDone])
-  
-  const stopAnimation = useCallback(() => {
-    if (engineRef.current) {
-      engineRef.current.stop()
-    }
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      recorderRef.current.stop()
-    }
-    setIsPlaying(false)
-    setIsRecording(false)
+  }, [data, theme])
+
+  const stopAnim = useCallback(() => {
+    engineRef.current?.stop()
+    if (recorderRef.current?.state !== 'inactive') recorderRef.current.stop()
+    setIsPlaying(false); setIsRecording(false)
   }, [])
-  
-  useEffect(() => {
-    return () => {
-      if (engineRef.current) {
-        engineRef.current.stop()
-      }
-      if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-        recorderRef.current.stop()
-      }
-    }
-  }, [])
-  
-  if (!data) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 400,
-        background: '#0a0a0f',
-        borderRadius: 12,
-        color: 'rgba(255,255,255,0.4)',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
-        <div>等待内容输入...</div>
-      </div>
-    )
-  }
-  
+
+  useEffect(() => () => { engineRef.current?.stop(); if (recorderRef.current?.state !== 'inactive') recorderRef.current.stop() }, [])
+
+  if (!data) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400, background: '#0a0a0f', borderRadius: 12, color: 'rgba(255,255,255,0.4)' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+      <div>等待内容输入...</div>
+    </div>
+  )
+
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 20,
-    }}>
-      {/* 主题选择 */}
-      <div style={{
-        display: 'flex',
-        gap: 10,
-        marginBottom: 10,
-      }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, background: '#0a0a0f', padding: 24, borderRadius: 16 }}>
+      {/* 风格选择 */}
+      <div style={{ display: 'flex', gap: 10 }}>
         {Object.entries(THEMES).map(([key, t]) => (
-          <button
-            key={key}
-            onClick={() => {
-              if (engineRef.current) {
-                engineRef.current.theme = t
-              }
-            }}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 20,
-              border: `1px solid ${t.accent}`,
-              background: theme === key ? `${t.accent}20` : 'transparent',
-              color: t.accent,
-              fontSize: 13,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
+          <button key={key} onClick={() => { /* 切换需重建引擎 */ }}
+            style={{ padding: '8px 18px', borderRadius: 20, border: `1px solid ${t.accent}`, background: theme === key ? `${t.accent}20` : 'transparent', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {t.name}
           </button>
         ))}
       </div>
-      
+
       {/* 画布 */}
-      <div style={{
-        position: 'relative',
-        borderRadius: 12,
-        overflow: 'hidden',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-      }}>
-        <canvas
-          ref={canvasRef}
-          width={1080}
-          height={1920}
-          style={{
-            display: 'block',
-            width: 360,
-            height: 640,
-            background: '#0a0a0f',
-          }}
-        />
-        
-        {/* 进度条 */}
-        {isPlaying && (
-          <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            background: 'rgba(255,255,255,0.1)',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${progress}%`,
-              background: currentTheme.accent,
-              transition: 'width 0.1s',
-            }} />
+      <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+        <canvas ref={canvasRef} width={1080} height={1920}
+          style={{ display: 'block', width: 340, height: 604, background: '#0a0a0f' }} />
+        {(isPlaying || isRecording) && (
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,0.1)' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: currentTheme.accent, transition: 'width 0.1s' }} />
+          </div>
+        )}
+        {isRecording && (
+          <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', animation: 'pulse 1s infinite' }} />
+            <span style={{ color: '#ef4444', fontSize: 12, fontWeight: 600 }}>REC</span>
           </div>
         )}
       </div>
-      
-      {/* 控制按钮 */}
+
+      {/* 按钮 */}
       <div style={{ display: 'flex', gap: 12 }}>
         {!recordedBlob ? (
           <>
-            <button
-              onClick={() => startAnimation(false)}
-              style={{
-                padding: '12px 32px',
-                borderRadius: 24,
-                border: 'none',
-                background: currentTheme.accent,
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: isPlaying && !isRecording ? 'default' : 'pointer',
-                boxShadow: `0 4px 20px ${currentTheme.glowColor}`,
-              }}
-            >
-              {isPlaying ? '播放中...' : '预览动画'}
+            <button onClick={() => startAnim(false)} disabled={isPlaying && !isRecording}
+              style={{ padding: '12px 28px', borderRadius: 24, border: 'none', background: currentTheme.accent, color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 20px ${currentTheme.glow}`, opacity: isPlaying && !isRecording ? 0.6 : 1 }}>
+              {isPlaying && !isRecording ? '播放中...' : '预览动画'}
             </button>
-            <button
-              onClick={() => startAnimation(true)}
-              disabled={isRecording}
-              style={{
-                padding: '12px 32px',
-                borderRadius: 24,
-                border: `1px solid ${currentTheme.accent}`,
-                background: 'transparent',
-                color: currentTheme.accent,
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: isRecording ? 'not-allowed' : 'pointer',
-                opacity: isRecording ? 0.5 : 1,
-              }}
-            >
+            <button onClick={() => startAnim(true)} disabled={isRecording}
+              style={{ padding: '12px 28px', borderRadius: 24, border: `1px solid ${currentTheme.accent}`, background: 'transparent', color: currentTheme.accent, fontSize: 15, fontWeight: 600, cursor: 'pointer', opacity: isRecording ? 0.5 : 1 }}>
               {isRecording ? '录制中...' : '录制视频'}
             </button>
           </>
         ) : (
           <>
-            <button
-              onClick={() => {
-                const url = URL.createObjectURL(mp4Blob || recordedBlob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `${(data?.title || '视频').slice(0, 10)}_视频.mp4`
-                a.click()
-                URL.revokeObjectURL(url)
-              }}
-              style={{
-                padding: '12px 32px',
-                borderRadius: 24,
-                border: 'none',
-                background: '#10b981',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(16,185,129,0.3)',
-              }}
-            >
+            <button onClick={() => {
+              const url = URL.createObjectURL(recordedBlob)
+              const a = document.createElement('a')
+              a.href = url; a.download = `${(data?.title || '视频').slice(0, 10)}.webm`; a.click()
+              URL.revokeObjectURL(url)
+            }}
+              style={{ padding: '12px 28px', borderRadius: 24, border: 'none', background: '#10b981', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
               下载视频
             </button>
-            <button
-              onClick={() => {
-                setRecordedBlob(null)
-                setMp4Blob(null)
-              }}
-              style={{
-                padding: '12px 24px',
-                borderRadius: 24,
-                border: '1px solid rgba(255,255,255,0.2)',
-                background: 'transparent',
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: 15,
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => { setRecordedBlob(null) }}
+              style={{ padding: '12px 20px', borderRadius: 24, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer' }}>
               重新录制
             </button>
           </>
         )}
-        
         {onClose && (
-          <button
-            onClick={onClose}
-            style={{
-              padding: '12px 24px',
-              borderRadius: 24,
-              border: '1px solid rgba(255,255,255,0.2)',
-              background: 'transparent',
-              color: 'rgba(255,255,255,0.6)',
-              fontSize: 15,
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={onClose} style={{ padding: '12px 20px', borderRadius: 24, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 14, cursor: 'pointer' }}>
             关闭
           </button>
         )}
       </div>
-      
-      {/* 说明 */}
-      <div style={{
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.3)',
-        textAlign: 'center',
-      }}>
-        1080×1920 · 9:16竖屏 · 适用于抖音/视频号/小红书
+
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textAlign: 'center' }}>
+        1080×1920 · 9:16竖屏 · 抖音/视频号/小红书
       </div>
     </div>
   )
