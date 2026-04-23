@@ -158,18 +158,13 @@ export default function WechatFormatter({ article }) {
         </div>
       ) : (
         <div style={{ padding: '14px 16px' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px' }}>
-            1. 点击"复制HTML代码"<br/>
-            2. 打开微信公众号后台 → 新建图文<br/>
-            3. 在编辑器里粘贴<br/>
-            4. 格式不会丢失
-          </div>
-          <textarea readOnly value={html} rows={8}
-            style={{ width: '100%', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '10px', color: 'rgba(255,255,255,0.65)', fontSize: '11px', fontFamily: 'monospace', resize: 'none', lineHeight: '1.6', boxSizing: 'border-box' }} />
           <button onClick={copy}
-            style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '8px', border: 'none', background: theme.accentColor, color: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-            {copied ? <><Check size={14} />已复制</> : <><Copy size={14} />复制HTML代码</>}
+            style={{ width: '100%', padding: '14px', borderRadius: '8px', border: 'none', background: theme.accentColor, color: '#fff', fontSize: '16px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: `0 4px 12px ${theme.accentColor}40` }}>
+            {copied ? <><Check size={18} />已复制！现在去公众号粘贴</> : <><Copy size={18} />一键复制到公众号</>}
           </button>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '8px', textAlign: 'center' }}>
+            复制后 → 打开微信公众号后台 → 新建图文 → 粘贴 → 格式不会丢
+          </div>
         </div>
       )}
     </div>
