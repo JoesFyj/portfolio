@@ -106,7 +106,7 @@ function drawTechParticles(c, cw, ch, t) {
 
 // drawTechCardFull 的简化版
 function drawTechCardFullSimple(ctx, pt, index, x, y, w, h, isNew) {
-  const r = 12;
+  const r = Math.min(16, w * 0.05);
   const neonColor = index % 2 === 0 ? '#06b6d4' : '#a855f7';
   const accentColor = index % 3 === 0 ? '#22d3ee' : index % 3 === 1 ? '#818cf8' : '#c084fc';
 
@@ -122,21 +122,26 @@ function drawTechCardFullSimple(ctx, pt, index, x, y, w, h, isNew) {
 
   ctx.fillStyle = accentColor;
   ctx.beginPath();
-  ctx.moveTo(x + 10, y + 10); ctx.lineTo(x + 36, y + 10); ctx.lineTo(x + 10, y + 36);
+  ctx.moveTo(x + w * 0.03, y + w * 0.03); ctx.lineTo(x + w * 0.10, y + w * 0.03); ctx.lineTo(x + w * 0.03, y + w * 0.10);
   ctx.closePath(); ctx.fill();
 
+  const numFontSize = Math.max(12, Math.round(w * 0.05));
+  const titleFontSize = Math.max(16, Math.round(w * 0.045));
+  const descFontSize = Math.max(12, Math.round(w * 0.03));
+
   ctx.fillStyle = accentColor;
-  ctx.font = '700 11px sans-serif';
+  ctx.font = `700 ${numFontSize}px sans-serif`;
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.fillText('#' + (index + 1), x + 16, y + 44);
+  ctx.fillText('#' + (index + 1), x + w * 0.05, y + h * 0.3);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText(pt.label || '', x + 16, y + 62);
+  ctx.font = `bold ${titleFontSize}px sans-serif`;
+  ctx.shadowColor = neonColor; ctx.shadowBlur = 10;
+  ctx.fillText(pt.label || '', x + w * 0.05, y + h * 0.42);
 
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.font = '400 12px sans-serif';
-  ctx.fillText((pt.desc || pt.short || '').slice(0, 30), x + 16, y + 86);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.shadowBlur = 0;
+  ctx.font = `${descFontSize}px sans-serif`;
+  ctx.fillText((pt.desc || pt.short || '').slice(0, 30), x + w * 0.05, y + h * 0.72);
 }
 
 // 完整的动画绘制（适配 1280×720）
@@ -336,18 +341,22 @@ function drawFrame(ctx, cw, ch, t) {
     ctx.strokeStyle = lg2; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.22); ctx.lineTo(cw * 0.9, ch * 0.22); ctx.stroke(); ctx.restore();
 
-    const colW = cw * 0.2;
-    const tallH = ch * 0.28, shortH = ch * 0.18;
-    const gapX = cw * 0.02, gapY = ch * 0.025;
-    const gridStartY = ch * 0.26;
+    const preferOneRow = n <= 5;
+    const cols4 = preferOneRow ? n : Math.min(4, Math.ceil(n / 2));
+    const rows4 = preferOneRow ? 1 : 2;
+    const availW = cw * 0.92;
+    const cellW = availW / cols4;
+    const cellH = rows4 > 1 ? ch * 0.80 / rows4 : cellW * 0.38;
+    const gridX = (cw - cols4 * cellW) / 2;
+    const gridY = rows4 > 1 ? ch * 0.13 : ch * 0.25;
     for (let i = 0; i < n; i++) {
-      const col = i % 4;
-      const row = Math.floor(i / 4);
-      const cx3 = (cw - 4 * colW - 3 * gapX) / 2 + col * (colW + gapX);
-      const cy2 = gridStartY + row * (tallH + gapY);
-      const rh = i % 3 === 1 ? shortH : tallH;
+      const col = i % cols4;
+      const row = rows4 > 1 && i >= cols4 ? 1 : 0;
+      const colOffset = rows4 > 1 && i >= cols4 ? (cols4 - (n - cols4)) / 2 : 0;
+      const cx3 = gridX + (col + colOffset) * cellW;
+      const cy2 = gridY + row * cellH;
       ctx.save();
-      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, colW, rh, false);
+      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, cellW, cellH, false);
       ctx.restore();
     }
   }
@@ -380,27 +389,31 @@ function drawFrame(ctx, cw, ch, t) {
       ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.22); ctx.lineTo(cw * 0.9, ch * 0.22); ctx.stroke(); ctx.restore();
     }
 
-    const colW = cw * 0.2;
-    const tallH = ch * 0.28, shortH = ch * 0.18;
-    const gapX = cw * 0.02, gapY = ch * 0.025;
-    const gridStartY = ch * 0.26;
+    const preferOneRow2 = n <= 5;
+    const cols5 = preferOneRow2 ? n : Math.min(4, Math.ceil(n / 2));
+    const rows5 = preferOneRow2 ? 1 : 2;
+    const availW2 = cw * 0.92;
+    const cellW5 = availW2 / cols5;
+    const cellH5 = rows5 > 1 ? ch * 0.80 / rows5 : cellW5 * 0.38;
+    const gridX5 = (cw - cols5 * cellW5) / 2;
+    const gridY5 = rows5 > 1 ? ch * 0.13 : ch * 0.25;
     for (let i = 0; i < n; i++) {
       const delay = i * 0.06;
       const ip = Math.min(1, Math.max(0, (boomProg - delay) / (1 - delay)));
       const ep2 = easeOutBack(ip);
 
-      const col = i % 4;
-      const row = Math.floor(i / 4);
-      const cx3 = (cw - 4 * colW - 3 * gapX) / 2 + col * (colW + gapX);
-      const cy2 = gridStartY + row * (tallH + gapY);
-      const rh = i % 3 === 1 ? shortH : tallH;
+      const col = i % cols5;
+      const row = rows5 > 1 && i >= cols5 ? 1 : 0;
+      const colOffset = rows5 > 1 && i >= cols5 ? (cols5 - (n - cols5)) / 2 : 0;
+      const cx3 = gridX5 + (col + colOffset) * cellW5;
+      const cy2 = gridY5 + row * cellH5;
 
       ctx.save();
       ctx.globalAlpha = ip;
-      ctx.translate(cx3 + colW/2, cy2 + rh/2);
+      ctx.translate(cx3 + cellW5/2, cy2 + cellH5/2);
       ctx.scale(ep2, ep2);
-      ctx.translate(-(cx3 + colW/2), -(cy2 + rh/2));
-      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, colW, rh, i >= n - 3);
+      ctx.translate(-(cx3 + cellW5/2), -(cy2 + cellH5/2));
+      drawTechCardFullSimple(ctx, data.points[i], i, cx3, cy2, cellW5, cellH5, i >= n - 3);
       ctx.restore();
     }
   }

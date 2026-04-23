@@ -64,7 +64,18 @@ async function handleSummarize(req, res) {
           model: 'deepseek-chat',
           messages: [
             { role: 'system', content: '你是一个内容提炼专家。请严格返回JSON格式，不要包含任何解释文字。' },
-            { role: 'user', content: `你是一个内容提炼专家。请从以下内容中提炼出核心信息，返回纯JSON格式：\n\n{\n  "title": "提取的核心标题（不超过12个字）",\n  "points": [{"label": "核心词（2-4个字）","short": "一句话补充说明（5-10字）","desc": "详细解释（15-30字）"}]\n}\n\n内容如下：\n${text.trim()}` },
+            { role: 'user', content: `你是一个内容提炼专家。请从以下内容中提炼出核心信息，返回纯JSON格式：
+
+{
+  "title": "提取的核心标题（不超过12个字）",
+  "points": [{"label": "核心词（2-4个字）","short": "一句话补充说明（5-10字）","desc": "详细解释（15-30字）","formatted": "精炼格式：事件描述（4-8字）：核心感悟（4-8字），共10-16字"}]
+}
+
+重要：
+- formatted字段：精炼格式为"数字. 事件描述：核心感悟"，事件描述和核心感悟各4-8字，整体10-16字，参考例子：至亲逝去：悟离别懂珍惜、疾病突袭：知健康是根本、创业失败：懂风险与现实
+
+内容如下：
+${text.trim()}` },
           ],
           temperature: 0.3,
           max_tokens: 1024,

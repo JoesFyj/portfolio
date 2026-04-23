@@ -144,22 +144,67 @@ function drawCell(ctx, pt, index, x, y, w, h, state, color, cw) {
   drawRoundedRect(ctx, x, y, w, h, r)
   ctx.fill()
 
-  const px = cw * 0.022
-  const py = cw * 0.015
-  let cy = y + py
+  const padX = cw * 0.022
+  const padY = cw * 0.018
 
+  // 小号数字，放在左上角
   if (state >= 1) {
-    const numSize = Math.round(cw * 0.052)
+    const numSize = Math.round(cw * 0.025)
     ctx.font = `900 ${numSize}px "PingFang SC", sans-serif`
     ctx.fillStyle = color
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.shadowColor = `${color}90`
-    ctx.shadowBlur = cw * 0.015
-    ctx.fillText(String(index + 1).padStart(2, '0'), x + px, cy)
+    ctx.shadowBlur = cw * 0.012
+    ctx.fillText(String(index + 1), x + padX, y + padY)
     ctx.shadowBlur = 0
-    cy += numSize + cw * 0.013
   }
+
+  // 精炼格式（pt.formatted）：事件描述：核心感悟
+  if (state >= 2 && pt.formatted) {
+    const raw = pt.formatted || ''
+    // 去掉前导数字和点："1. 至亲逝去：悟离别懂珍惜" → "至亲逝去：悟离别懂珍惜"
+    const content = raw.replace(/^\d+\.\s*/, '')
+    const mainSize = Math.round(cw * 0.03)
+    ctx.font = `800 ${mainSize}px "PingFang SC", sans-serif`
+    ctx.fillStyle = '#374151'
+    ctx.strokeStyle = `${color}40`
+    ctx.lineWidth = cw * 0.002
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const maxCW = w - padX * 2
+    let text = content
+    while (ctx.measureText(text).width > maxCW && text.length > 1) {
+      text = text.slice(0, -1)
+    }
+    ctx.shadowColor = `${color}40`
+    ctx.shadowBlur = cw * 0.01
+    ctx.fillText(text, x + w / 2, y + h / 2)
+    ctx.shadowBlur = 0
+    // 打勾
+    if (state >= 3) {
+      const ckX = x + w - cw * 0.07
+      const ckY = y + cw * 0.018
+      const ckR = cw * 0.023
+      ctx.fillStyle = '#10B981'
+      ctx.shadowColor = 'rgba(16,185,129,0.6)'
+      ctx.shadowBlur = cw * 0.012
+      ctx.beginPath(); ctx.arc(ckX, ckY, ckR, 0, Math.PI * 2); ctx.fill()
+      ctx.shadowBlur = 0
+      ctx.strokeStyle = 'white'; ctx.lineWidth = cw * 0.0035
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+      ctx.beginPath()
+      ctx.moveTo(ckX - ckR * 0.35, ckY)
+      ctx.lineTo(ckX - ckR * 0.05, ckY + ckR * 0.35)
+      ctx.lineTo(ckX + ckR * 0.4, ckY - ckR * 0.3)
+      ctx.stroke()
+    }
+    ctx.restore()
+    return
+  }
+
+  // 传统格式（label + desc）
+  let cy = y + padY + Math.round(cw * 0.03) + cw * 0.02
 
   if (state >= 2) {
     const labelSize = Math.round(cw * 0.028)
@@ -167,10 +212,10 @@ function drawCell(ctx, pt, index, x, y, w, h, state, color, cw) {
     ctx.fillStyle = color
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
-    const maxLW = w - px * 2
+    const maxLW = w - padX * 2
     let label = pt.label
     while (ctx.measureText(label).width > maxLW && label.length > 1) label = label.slice(0, -1)
-    ctx.fillText(label, x + px, cy, maxLW)
+    ctx.fillText(label, x + padX, cy, maxLW)
     cy += labelSize + cw * 0.012
   }
 
@@ -181,7 +226,7 @@ function drawCell(ctx, pt, index, x, y, w, h, state, color, cw) {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     const desc = pt.desc || pt.short || ''
-    const maxDW = w - px * 2
+    const maxDW = w - padX * 2
     const lineH = descSize * 1.55
     const maxLines = 3
     let line = ''
@@ -193,7 +238,7 @@ function drawCell(ctx, pt, index, x, y, w, h, state, color, cw) {
     }
     if (line) lines.push(line)
     for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
-      ctx.fillText(lines[i], x + px, cy + i * lineH, maxDW)
+      ctx.fillText(lines[i], x + padX, cy + i * lineH, maxDW)
     }
 
     const ckX = x + w - cw * 0.07
@@ -627,57 +672,53 @@ class AnimEngine {
     const titleLen = this.data.title.length
     const titleEnd = 50 + titleLen * 180
 
-    // 风格三（AI科技）：标题打字 → 音符飘浮 → 静态全展示 → 砰展开 → 爆炸Slogan
+    // 风格三（AI科技）：标题打字 → 左→右排队（仅关键词）→ 右→左排队（带解释）→ 宫格亮相 → 爆炸Slogan
     if (this.style === 'tech') {
-      // 把标题和所有要点拆成「音符短语」（每组3-4字）
       const titleText = this.data.title || ''
-      const phrases = []
-      // 标题每3字一组
-      for (let i = 0; i < titleText.length; i += 3) {
-        const chunk = titleText.slice(i, i + 3)
-        if (chunk) phrases.push({ text: chunk, isTitle: true, index: phrases.length })
-      }
-      // 要点每3字一组
-      this.data.points.forEach((pt, pi) => {
-        const label = pt.label || ''
-        for (let i = 0; i < label.length; i += 3) {
-          const chunk = label.slice(i, i + 3)
-          if (chunk) phrases.push({ text: chunk, isTitle: false, index: phrases.length, pointIndex: pi })
-        }
+
+      // 提取关键词（≤4字）和对应解释
+      const items = this.data.points.map((pt, i) => {
+        const label = (pt.label || '').trim()
+        const desc = (pt.desc || pt.short || '').trim()
+        // 关键词：优先 label，否则从 desc 取前4字
+        let kw = label
+        if (!kw || kw.length > 4) kw = desc.slice(0, 4)
+        if (!kw) kw = label.slice(0, 4) || `功能${i + 1}`
+        kw = kw.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '').slice(0, 4)
+        if (!kw) kw = `功能${i + 1}`
+        // 解释：从 desc 截取，忽略标题中已有内容
+        const descText = desc.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s]/g, '').trim()
+        const descShort = descText.length > 15 ? descText.slice(0, 15) + '…' : descText
+        return { kw, desc: descShort, index: i }
       })
 
-      const n = phrases.length
-      const phraseDur = 2200       // 每个短语完整周期
-      const phraseGap = 700       // 相邻短语开始时间差
+      const n = items.length
       const titleTypingDur = 50 + titleText.length * 120
-      const dancingStart = titleTypingDur + 300  // 打字结束后等0.3s开始飘浮
-      const lastPhraseExit = dancingStart + (n - 1) * phraseGap + phraseDur
-      const staticStart = lastPhraseExit + 1200  // 静默1.2秒
-      const staticDur = 1800                     // 静态展示
-      const boomStart = staticStart + staticDur
+      const phase1Start = titleTypingDur + 500
+
+      // 阶段1：左→右——先入场（300ms间隔），全部入场后定住1秒，然后整体移动5秒
+      const phase1Dur = (n - 1) * 300 + 1000 + 5000
+
+      // 阶段2：右→左——同节奏
+      const phase2Start = phase1Start + phase1Dur + 1000
+      const phase2Dur = (n - 1) * 300 + 1000 + 5000
+
+      // 阶段3：宫格亮相1.5秒
+      const gridStart = phase2Start + phase2Dur + 1000
+      const gridHoldDur = 1500
+      const boomStart = gridStart + gridHoldDur
       const boomDur = 800
       const expDur = 1000
       const sloganDur = 2500
       const endHold = 2200
       const total = boomStart + boomDur + expDur + sloganDur + endHold
 
-      // 每条短语的飘浮轨迹方向（循环）
-      const dirs = [
-        { x: -1, y: -1 }, // 左上
-        { x: 1, y: -1 },  // 右上
-        { x: -1, y: 1 }, // 左下
-        { x: 1, y: 1 },  // 右下
-        { x: 0, y: -1 },  // 上
-        { x: 0, y: 1 },  // 下
-        { x: -1, y: 0 }, // 左
-        { x: 1, y: 0 },   // 右
-      ]
-
       return {
-        titleTypingDur, dancingStart, phrases, n, phraseDur, phraseGap, dirs,
-        lastPhraseExit, staticStart, staticDur,
-        boomStart, boomDur,
-        expDur, sloganDur, endHold, total,
+        titleTypingDur, phase1Start, items, n,
+        enterGap: 300, holdDur: 1000, crossDur: 5000, phase1Dur,
+        phase2Start, enterGap2: 300, holdDur2: 1000, crossDur2: 5000, phase2Dur,
+        gridStart, gridHoldDur,
+        boomStart, boomDur, expDur, sloganDur, endHold, total,
       }
     }
 
@@ -741,255 +782,373 @@ class AnimEngine {
 
     // ===== 风格三（AI科技）=====
     if (this.style === 'tech') {
-      const { titleTypingDur, dancingStart, phrases, n, phraseDur, phraseGap, dirs,
-        staticStart, staticDur, boomStart, boomDur,
-        expDur, sloganDur, endHold, total } = this.getTimings()
+      const { titleTypingDur, phase1Start, items, n,
+        enterGap, holdDur, crossDur, phase1Dur,
+        phase2Start, enterGap2, holdDur2, crossDur2, phase2Dur,
+        gridStart, gridHoldDur,
+        boomStart, boomDur, expDur, sloganDur, endHold, total } = this.getTimings()
+
+      // 8色序号盘
+      const COLORS = [
+        '#06b6d4', '#a855f7', '#22d3ee', '#ec4899',
+        '#f97316', '#10b981', '#facc15', '#60a5fa',
+      ]
 
       // === 背景 ===
       ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch)
       drawTechParticles(ctx, cw, ch, t)
 
-      // === 标题打字机 ===
-      const titleChars = Math.min(
-        this.data.title.length,
-        Math.max(0, Math.floor((t - 50) / 120))
-      )
+      // === 标题打字机（顶部居左）===
+      const titleChars = Math.min(this.data.title.length, Math.max(0, Math.floor((t - 50) / 120)))
       if (titleChars > 0) {
         const titleText = this.data.title.slice(0, titleChars)
         ctx.save()
-        ctx.fillStyle = '#ffffff'
-        ctx.shadowColor = '#a855f7'
-        ctx.shadowBlur = 20
+        ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 20
         ctx.font = `900 ${Math.round(cw * 0.04)}px "PingFang SC", sans-serif`
-        ctx.textAlign = 'left'
-        ctx.textBaseline = 'top'
-        ctx.fillText(titleText, cw * 0.06, ch * 0.08)
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+        ctx.fillText(titleText, cw * 0.06, ch * 0.07)
         ctx.restore()
       }
 
-      // === 音符舞动短语 ===
-      for (let pi = 0; pi < n; pi++) {
-        const phrase = phrases[pi]
-        const phraseStart = dancingStart + pi * phraseGap
-        if (t < phraseStart) continue
-        if (t > phraseStart + phraseDur) continue
+      const fontSize = Math.round(cw * 0.038)
+      const rowH = ch * 0.1
+      // 一行里有多少个可见词条（用于计算队列位置）
+      // 布局：中央偏下区域，y 从 ch*0.25 到 ch*0.8
 
-        const prog = (t - phraseStart) / phraseDur
-        const dir = dirs[pi % dirs.length]
-        const neonColor = pi % 2 === 0 ? '#06b6d4' : '#a855f7'
+      // === 画一个词条（关键词+序号+可选解释）===
+      // cx,cy = 中心坐标，alpha, scale, showDesc = 是否显示解释
+      const drawItem = (itemIdx, cx, cy, alpha, scale, showDesc) => {
+        const item = items[itemIdx]
+        const color = COLORS[itemIdx % COLORS.length]
+        const kw = item.kw
+        const desc = item.desc
+        const numText = `${itemIdx + 1}`
 
-        if (prog < 0.5) {
-          // 入场：从反方向弹入
-          const p = prog / 0.5
-          const ep = easeOutBack(Math.min(1, p * 1.2))
-          const offsetDist = cw * 0.28
-          const bounceAmt = Math.sin(p * Math.PI) * (1 - p) * ch * 0.06
+        ctx.save()
+        ctx.globalAlpha = alpha
+        ctx.translate(cx, cy)
+        ctx.scale(scale, scale)
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
 
-          const fontSize = Math.round(cw * 0.038)
-          ctx.save()
-          ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
-          const phraseW = ctx.measureText(phrase.text).width
+        // 序号圆圈
+        const numR = fontSize * 0.85
+        ctx.beginPath(); ctx.arc(0, 0, numR, 0, Math.PI * 2)
+        ctx.fillStyle = color; ctx.globalAlpha = alpha * 0.95; ctx.fill()
 
-          // 短语排列：4字一行，多行则换行
-          const charsPerRow = 4
-          const charH = fontSize * 1.2
-          const rows = Math.ceil(phrase.text.length / charsPerRow)
-          const totalH = rows * charH
-          const startX = cw * 0.06
-          const baseY = ch * 0.2 + pi * ch * 0.05  // 错开高度
+        // 序号数字（加粗描边，与标题一样清晰）
+        ctx.globalAlpha = alpha
+        ctx.strokeStyle = '#080c14'; ctx.lineWidth = 3
+        ctx.font = `900 ${Math.round(fontSize * 0.72)}px "PingFang SC", sans-serif`
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+        ctx.strokeText(numText, 0, 1); ctx.fillText(numText, 0, 1)
 
-          for (let ci = 0; ci < phrase.text.length; ci++) {
-            const row = Math.floor(ci / charsPerRow)
-            const col = ci % charsPerRow
-            const char = phrase.text[ci]
-            const charW = ctx.measureText(char).width
+        // 关键词（大白字，强发光，与标题同级别清晰度）
+        const numW = fontSize * 1.5
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = color; ctx.shadowBlur = 25
+        ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
+        ctx.textAlign = 'left'
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2
+        ctx.strokeText(kw, numW, 0); ctx.fillText(kw, numW, 0)
 
-            const stagger = ci * 0.06
-            const cp = Math.min(1, Math.max(0, p * 1.5 - stagger))
-            const charBounce = Math.sin(cp * Math.PI) * (1 - cp) * ch * 0.04
+        // 解释（与关键词同等清晰，亮紫色高亮，专用行）
+        if (showDesc && desc) {
+          const kwW2 = ctx.measureText(kw).width
+          const descX = numW + kwW2 + fontSize * 0.6
+          const descY = fontSize * 0.75
+          ctx.font = `400 ${Math.round(fontSize * 0.72)}px "PingFang SC", sans-serif`
+          const descW = ctx.measureText(desc).width
+          // 半透明紫色背景条
+          ctx.fillStyle = 'rgba(168,85,247,0.18)'
+          ctx.fillRect(descX - fontSize * 0.25, descY - fontSize * 0.55, descW + fontSize * 0.5, fontSize * 1.0)
+          // 亮紫色描边
+          ctx.strokeStyle = 'rgba(168,85,247,0.5)'; ctx.lineWidth = 1.5
+          ctx.strokeRect(descX - fontSize * 0.25, descY - fontSize * 0.55, descW + fontSize * 0.5, fontSize * 1.0)
+          // 亮紫色文字，强发光
+          ctx.fillStyle = 'rgba(210,195,255,1)'
+          ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 12
+          ctx.strokeStyle = 'rgba(139,92,246,0.4)'; ctx.lineWidth = 1
+          ctx.strokeText(desc, descX, descY); ctx.fillText(desc, descX, descY)
+        }
 
-            const targetX = startX + col * (charW + 8)
-            const targetY = baseY + row * charH
+        ctx.restore()
+      }
 
-            const startX2 = targetX + dir.x * offsetDist
-            const startY2 = targetY + dir.y * offsetDist
+      // === 阶段1：左→右波浪式移动（仅关键词，无解释）===
+      // 阶段1：左→右——先全部入场定住1秒，然后整体一起移动5秒穿越
+      // enterGap=300, holdDur=1000, crossDur=5000 来自 getTimings()
+      const itemSpacing = (cw * 0.88) / 3   // 每个词条宽度
+      const enterX = -itemSpacing             // 入场起点
 
-            ctx.save()
-            ctx.globalAlpha = cp * Math.min(1, p * 1.4)
-            ctx.fillStyle = '#ffffff'
-            ctx.shadowColor = neonColor
-            ctx.shadowBlur = cp * 16
-            ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
-            ctx.textAlign = 'left'
-            ctx.textBaseline = 'top'
-            const cx2 = targetX + (startX2 - targetX) * (1 - ep)
-            const cy2 = targetY + (startY2 - targetY) * (1 - ep) - charBounce
-            ctx.fillText(char, cx2, cy2)
-            ctx.restore()
+      if (t >= phase1Start && t < phase1Start + phase1Dur) {
+        const phaseT = t - phase1Start
+
+        for (let i = 0; i < n; i++) {
+          const arriveT = i * enterGap         // 入场时刻
+          const holdEndT = (n - 1) * enterGap + holdDur  // 定住结束时刻
+
+          if (phaseT < arriveT) continue      // 未入场
+
+          const rowIdx = i % 3                  // 0=上, 1=中, 2=下
+          const baseY = ch * (0.30 + rowIdx * 0.08)
+          const waveAmp = ch * 0.06              // 波浪振幅
+
+          let x, y, alpha, scaleX
+
+          if (phaseT < holdEndT) {
+            // === 定住阶段：每个词条依次入场，然后定住，波浪式闪烁 ===
+            const xEntry = enterGap * i * 0.15  // 入场时从左到右依次展开（微距）
+            x = enterX + xEntry
+            const wave = Math.sin((phaseT - arriveT) / holdDur * Math.PI * 1.5 + i * 0.8)
+            y = baseY + wave * waveAmp
+            // 入场淡入
+            const fadeP = Math.min(1, (phaseT - arriveT) / 400)
+            // 定住闪烁：节奏清晰，0.7~1.0
+            const twinkle = 0.7 + 0.3 * Math.abs(Math.sin((phaseT - arriveT) / 500 * Math.PI))
+            alpha = fadeP * twinkle
+            scaleX = 1 + 0.05 * Math.abs(Math.sin((phaseT - arriveT) / 500 * Math.PI))
+          } else {
+            // === 移动阶段：所有项一起从左到右匀速移动 ===
+            const moveT = phaseT - holdEndT              // 移动已耗时
+            const rowPhase = rowIdx * (Math.PI / 3)    // 各行波形错开
+            const wave = Math.sin(moveT / crossDur * Math.PI * 2 + rowPhase)
+            x = -itemSpacing + (moveT / crossDur) * (cw + itemSpacing)
+            y = baseY + wave * waveAmp
+            const twinkle = 0.7 + 0.3 * Math.abs(Math.sin(moveT / 600 * Math.PI))
+            alpha = twinkle
+            scaleX = 1 + 0.05 * Math.abs(wave)
           }
-          ctx.restore()
-        } else {
-          // 退场：跳动着飞向方向
-          const p = (prog - 0.5) / 0.5
-          const ep = easeOutBack(p)
-          const offsetDist = cw * 0.28
-          const bounceAmt = Math.sin(p * Math.PI) * (1 - p) * ch * 0.04
 
-          const fontSize = Math.round(cw * 0.038)
-          ctx.save()
-          ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
+          // 退场保护
+          if (x < enterX - itemSpacing * 1.5 || x > cw + itemSpacing * 2) continue
 
-          const startX = cw * 0.06
-          const baseY = ch * 0.2 + pi * ch * 0.05
-          const charsPerRow = 4
-          const charH = fontSize * 1.2
-
-          for (let ci = 0; ci < phrase.text.length; ci++) {
-            const row = Math.floor(ci / charsPerRow)
-            const col = ci % charsPerRow
-            const char = phrase.text[ci]
-            const charW = ctx.measureText(char).width
-
-            const charBounce = Math.sin(p * Math.PI) * (1 - p) * ch * 0.03
-
-            const targetX = startX + col * (charW + 8)
-            const targetY = baseY + row * charH
-            const endX = targetX + dir.x * offsetDist
-            const endY = targetY + dir.y * offsetDist
-
-            ctx.save()
-            ctx.globalAlpha = (1 - p * 0.5)
-            ctx.fillStyle = '#ffffff'
-            ctx.shadowColor = neonColor
-            ctx.shadowBlur = (1 - p) * 14
-            ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
-            ctx.textAlign = 'left'
-            ctx.textBaseline = 'top'
-            const cx2 = targetX + (endX - targetX) * ep
-            const cy2 = targetY + (endY - targetY) * ep - charBounce
-            ctx.fillText(char, cx2, cy2)
-            ctx.restore()
-          }
-          ctx.restore()
+          drawItem(i, x + itemSpacing * 0.5, y, alpha, scaleX, false)
         }
       }
 
-      // === 静态全展示：标题居中 + 短语网格 ===
-      if (t >= staticStart && t < boomStart) {
+      // === 阶段2：右→左——先全部入场定住1秒，然后整体一起移动5秒穿越 ===
+      const itemSpacing2 = (cw * 0.88) / 3
+      const enterX2 = cw + itemSpacing2
+
+      if (t >= phase2Start && t < phase2Start + phase2Dur) {
+        const phaseT = t - phase2Start
+
+        for (let i = 0; i < n; i++) {
+          const arriveT = i * enterGap2
+          const holdEndT = (n - 1) * enterGap2 + holdDur2
+
+          if (phaseT < arriveT) continue
+
+          const rowIdx = i % 3
+          const baseY = ch * (0.34 + rowIdx * 0.09)
+          const waveAmp = ch * 0.07
+
+          let x, y, alpha, scaleX2
+
+          if (phaseT < holdEndT) {
+            const xEntry = enterGap2 * i * 0.15
+            x = enterX2 - xEntry
+            const wave = Math.sin((phaseT - arriveT) / holdDur2 * Math.PI * 1.5 + i * 0.8)
+            y = baseY + wave * waveAmp
+            const fadeP = Math.min(1, (phaseT - arriveT) / 400)
+            const twinkle = 0.7 + 0.3 * Math.abs(Math.sin((phaseT - arriveT) / 500 * Math.PI))
+            alpha = fadeP * twinkle
+            scaleX2 = 1 + 0.05 * Math.abs(Math.sin((phaseT - arriveT) / 500 * Math.PI))
+          } else {
+            const moveT = phaseT - holdEndT
+            const rowPhase = rowIdx * (Math.PI / 3) + Math.PI
+            const wave = Math.sin(moveT / crossDur2 * Math.PI * 2 + rowPhase)
+            x = enterX2 - (moveT / crossDur2) * (cw + itemSpacing2)
+            y = baseY + wave * waveAmp
+            const twinkle = 0.7 + 0.3 * Math.abs(Math.sin(moveT / 600 * Math.PI))
+            alpha = twinkle
+            scaleX2 = 1 + 0.05 * Math.abs(wave)
+          }
+
+          if (x < -itemSpacing2 * 2 || x > enterX2 + itemSpacing2 * 1.5) continue
+
+          drawItem(i, x + itemSpacing2 * 0.5, y, alpha, scaleX2, true)
+        }
+      }
+
+      // === 阶段3：标题居中 + 宫格亮相（含解释）===
+      if (t >= gridStart && t < boomStart) {
+        const gridProg = Math.min(1, (t - gridStart) / 800)
+        const ep = easeOutBack(Math.min(1, gridProg * 1.5))
+
         ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch)
         drawTechParticles(ctx, cw, ch, t)
 
-        // 大标题居中
+        // 标题居中（入场动画）
         ctx.save()
-        ctx.fillStyle = '#ffffff'
-        ctx.shadowColor = '#a855f7'
-        ctx.shadowBlur = 25
-        ctx.font = `900 ${Math.round(cw * 0.05)}px "PingFang SC", sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(this.data.title, cw / 2, ch * 0.1)
+        ctx.globalAlpha = gridProg
+        ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 30
+        ctx.font = `900 ${Math.round(cw * 0.048)}px "PingFang SC", sans-serif`
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+        ctx.fillText(this.data.title, cw / 2, ch * 0.07)
         ctx.restore()
 
         // 装饰线
-        ctx.save(); ctx.globalAlpha = 0.5
-        const lg = ctx.createLinearGradient(cw * 0.1, 0, cw * 0.9, 0)
-        lg.addColorStop(0, 'transparent'); lg.addColorStop(0.2, '#06b6d4')
-        lg.addColorStop(0.8, '#a855f7'); lg.addColorStop(1, 'transparent')
-        ctx.strokeStyle = lg; ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.18); ctx.lineTo(cw * 0.9, ch * 0.18); ctx.stroke(); ctx.restore()
+        if (gridProg > 0.2) {
+          ctx.save(); ctx.globalAlpha = (gridProg - 0.2) / 0.8 * 0.5
+          const lg = ctx.createLinearGradient(cw * 0.1, 0, cw * 0.9, 0)
+          lg.addColorStop(0, 'transparent'); lg.addColorStop(0.2, '#06b6d4')
+          lg.addColorStop(0.8, '#a855f7'); lg.addColorStop(1, 'transparent')
+          ctx.strokeStyle = lg; ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(cw * 0.1, ch * 0.13); ctx.lineTo(cw * 0.9, ch * 0.13); ctx.stroke(); ctx.restore()
+        }
 
-        // 短语网格布局
-        const phraseFontSize = Math.round(cw * 0.025)
-        const phraseH = phraseFontSize * 1.4
-        const cols = 5
-        const gridW = cw * 0.88
-        const cellW = gridW / cols
-        const startX2 = (cw - gridW) / 2
-        const phraseStartY = ch * 0.22
+        // 宫格（9宫格布局，3列横排，所有项整齐排列）
+        const cols4 = 3
+        const rows4 = Math.ceil(n / cols4)
+        const availW = cw * 0.90
+        const availH = ch * 0.75
+        const cellW = availW / cols4
+        const cellH = availH / rows4
+        const gridX = (cw - cols4 * cellW) / 2
+        const gridY = ch * 0.14
 
-        for (let pi = 0; pi < n; pi++) {
-          const col = pi % cols
-          const row = Math.floor(pi / cols)
-          const px2 = startX2 + col * cellW
-          const py2 = phraseStartY + row * phraseH
-          const neonColor = pi % 2 === 0 ? '#06b6d4' : '#a855f7'
+        for (let i = 0; i < n; i++) {
+          const col = i % cols4
+          const row = Math.floor(i / cols4)
+          // 最后一行居中
+          const colOffset = (row === rows4 - 1) ? (cols4 - (n % cols4 || cols4)) / 2 : 0
+          const px = gridX + (col + colOffset) * cellW
+          const py = gridY + row * cellH
+          const delay = i * 0.06
+          const appear = Math.max(0, Math.min(1, (gridProg - delay) / (1 - delay)))
+          const ep2 = easeOutBack(Math.min(1, appear * 1.5))
+          const color = COLORS[i % COLORS.length]
+          const item = items[i]
+          const descLen = item.desc ? item.desc.length : 0
 
           ctx.save()
-          ctx.fillStyle = '#ffffff'
-          ctx.shadowColor = neonColor
-          ctx.shadowBlur = 10
-          ctx.font = `700 ${phraseFontSize}px "PingFang SC", sans-serif`
+          ctx.globalAlpha = appear
+          ctx.translate(px + cellW / 2, py + cellH / 2)
+          ctx.scale(ep2, ep2)
+          ctx.translate(-(px + cellW / 2), -(py + cellH / 2))
+
+          // 卡片背景
+          ctx.fillStyle = 'rgba(255,255,255,0.05)'
+          ctx.strokeStyle = color; ctx.lineWidth = 1.5
+          ctx.shadowColor = color; ctx.shadowBlur = 8
+          ctx.beginPath()
+          ctx.roundRect(px + 4, py + 2, cellW - 8, cellH - 4, 8)
+          ctx.fill(); ctx.stroke()
+
+          // 序号圆圈
+          const numR = fontSize * 0.7
+          ctx.beginPath(); ctx.arc(px + numR + 6, py + cellH / 2, numR, 0, Math.PI * 2)
+          ctx.fillStyle = color; ctx.fill()
+          ctx.fillStyle = '#080c14'
+          ctx.font = `900 ${Math.round(fontSize * 0.7)}px "PingFang SC", sans-serif`
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+          ctx.strokeStyle = '#080c14'; ctx.lineWidth = 2
+          ctx.strokeText(`${i + 1}`, px + numR + 6, py + cellH / 2 + 1); ctx.fillText(`${i + 1}`, px + numR + 6, py + cellH / 2 + 1)
+
+          // 关键词（强发光，与标题同级别清晰度）
+          const numW2 = fontSize * 1.6
+          ctx.fillStyle = '#ffffff'; ctx.shadowColor = color; ctx.shadowBlur = 20
+          ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
           ctx.textAlign = 'left'
-          ctx.textBaseline = 'top'
-          ctx.fillText(phrases[pi].text, px2, py2)
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5
+          ctx.strokeText(item.kw, px + numW2, py + cellH * 0.32); ctx.fillText(item.kw, px + numW2, py + cellH * 0.32)
+
+          // 解释（与关键词同等清晰，亮紫色，字号适中）
+          if (item.desc) {
+            ctx.fillStyle = 'rgba(210,195,255,1)'; ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 8
+            ctx.font = `400 ${Math.round(fontSize * 0.55)}px "PingFang SC", sans-serif`
+            ctx.strokeStyle = 'rgba(139,92,246,0.25)'; ctx.lineWidth = 1
+            ctx.strokeText(item.desc, px + numW2, py + cellH * 0.72); ctx.fillText(item.desc, px + numW2, py + cellH * 0.72)
+          }
+
           ctx.restore()
         }
       }
 
-      // === 砰展开 + 爆炸 + Slogan ===
+      // === 阶段4：砰展开 + 爆炸 + Slogan ===
       if (t >= boomStart) {
         const boomProg = Math.min(1, (t - boomStart) / boomDur)
 
-        // 白闪
         ctx.fillStyle = '#ffffff'; ctx.globalAlpha = boomProg * 0.2; ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1
         ctx.fillStyle = '#080c14'; ctx.fillRect(0, 0, cw, ch)
         drawTechParticles(ctx, cw, ch, t)
 
-        // 标题居中浮现
+        // 标题浮现
         ctx.save()
-        ctx.fillStyle = '#ffffff'
-        ctx.shadowColor = '#a855f7'
-        ctx.shadowBlur = 25 * boomProg
-        ctx.globalAlpha = boomProg
-        ctx.font = `900 ${Math.round(cw * 0.05)}px "PingFang SC", sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(this.data.title, cw / 2, ch * 0.1)
+        ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#a855f7'
+        ctx.shadowBlur = 30 * boomProg; ctx.globalAlpha = boomProg
+        ctx.font = `900 ${Math.round(cw * 0.048)}px "PingFang SC", sans-serif`
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+        ctx.fillText(this.data.title, cw / 2, ch * 0.07)
         ctx.restore()
 
         // 装饰线
-        if (boomProg > 0.3) {
-          const lineProg = Math.min(1, (boomProg - 0.3) / 0.4)
-          ctx.save(); ctx.globalAlpha = lineProg * 0.5
+        if (boomProg > 0.2) {
+          const lp = Math.min(1, (boomProg - 0.2) / 0.8)
+          ctx.save(); ctx.globalAlpha = lp * 0.5
           const lg3 = ctx.createLinearGradient(cw * 0.1, 0, cw * 0.9, 0)
           lg3.addColorStop(0, 'transparent'); lg3.addColorStop(0.2, '#06b6d4')
           lg3.addColorStop(0.8, '#a855f7'); lg3.addColorStop(1, 'transparent')
           ctx.strokeStyle = lg3; ctx.lineWidth = 1
-          ctx.beginPath(); ctx.moveTo(cw * 0.1, ch * 0.18); ctx.lineTo(cw * 0.9, ch * 0.18); ctx.stroke(); ctx.restore()
+          ctx.beginPath()
+          ctx.moveTo(cw * 0.1, ch * 0.13); ctx.lineTo(cw * 0.9, ch * 0.13); ctx.stroke(); ctx.restore()
         }
 
-        // 短语网格依次展开
-        const phraseFontSize2 = Math.round(cw * 0.025)
-        const phraseH2 = phraseFontSize2 * 1.4
-        const cols2 = 5
-        const gridW2 = cw * 0.88
-        const cellW2 = gridW2 / cols2
-        const startX3 = (cw - gridW2) / 2
-        const phraseStartY2 = ch * 0.22
+        // 宫格展开（9宫格，3列×多行，含解释）
+        const cols5 = 3
+        const rows5 = Math.ceil(n / cols5)
+        const availW2 = cw * 0.90
+        const availH2 = ch * 0.75
+        const cellW5 = availW2 / cols5
+        const cellH5 = availH2 / rows5
+        const gX = (cw - cols5 * cellW5) / 2
+        const gY = ch * 0.14
 
-        for (let pi = 0; pi < n; pi++) {
-          const delay = pi * 0.06
-          const ip = Math.min(1, Math.max(0, (boomProg - delay) / (1 - delay)))
+        for (let i = 0; i < n; i++) {
+          const col2 = i % cols5
+          const row2 = Math.floor(i / cols5)
+          const colOffset2 = (row2 === rows5 - 1) ? (cols5 - (n % cols5 || cols5)) / 2 : 0
+          const px2 = gX + (col2 + colOffset2) * cellW5
+          const py2 = gY + row2 * cellH5
+          const delay = i * 0.06
+          const ip = Math.max(0, Math.min(1, (boomProg - delay) / (1 - delay)))
           const ep2 = easeOutBack(ip)
-
-          const col = pi % cols2
-          const row = Math.floor(pi / cols2)
-          const px3 = startX3 + col * cellW2
-          const py3 = phraseStartY2 + row * phraseH2
-          const neonColor = pi % 2 === 0 ? '#06b6d4' : '#a855f7'
-
+          const color = COLORS[i % COLORS.length]
+          const item = items[i]
           ctx.save()
           ctx.globalAlpha = ip
-          ctx.translate(px3 + cellW2 / 2, py3 + phraseH2 / 2)
+          ctx.translate(px2 + cellW5 / 2, py2 + cellH5 / 2)
           ctx.scale(ep2, ep2)
-          ctx.translate(-(px3 + cellW2 / 2), -(py3 + phraseH2 / 2))
-          ctx.fillStyle = '#ffffff'
-          ctx.shadowColor = neonColor
-          ctx.shadowBlur = 10
-          ctx.font = `700 ${phraseFontSize2}px "PingFang SC", sans-serif`
+          ctx.translate(-(px2 + cellW5 / 2), -(py2 + cellH5 / 2))
+          ctx.fillStyle = 'rgba(255,255,255,0.05)'
+          ctx.strokeStyle = color; ctx.lineWidth = 1.5
+          ctx.shadowColor = color; ctx.shadowBlur = 8
+          ctx.beginPath()
+          ctx.roundRect(px2 + 4, py2 + 2, cellW5 - 8, cellH5 - 4, 8)
+          ctx.fill(); ctx.stroke()
+          const numR2 = fontSize * 0.7
+          ctx.beginPath(); ctx.arc(px2 + numR2 + 6, py2 + cellH5 / 2, numR2, 0, Math.PI * 2)
+          ctx.fillStyle = color; ctx.fill()
+          ctx.fillStyle = '#080c14'
+          ctx.font = `900 ${Math.round(fontSize * 0.7)}px "PingFang SC", sans-serif`
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+          ctx.strokeStyle = '#080c14'; ctx.lineWidth = 2
+          ctx.strokeText(`${i + 1}`, px2 + numR2 + 6, py2 + cellH5 / 2 + 1); ctx.fillText(`${i + 1}`, px2 + numR2 + 6, py2 + cellH5 / 2 + 1)
+          const numW3 = fontSize * 1.6
+          ctx.fillStyle = '#ffffff'; ctx.shadowColor = color; ctx.shadowBlur = 20
+          ctx.font = `900 ${fontSize}px "PingFang SC", sans-serif`
           ctx.textAlign = 'left'
-          ctx.textBaseline = 'top'
-          ctx.fillText(phrases[pi].text, px3, py3)
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1.5
+          ctx.strokeText(item.kw, px2 + numW3, py2 + cellH5 * 0.32); ctx.fillText(item.kw, px2 + numW3, py2 + cellH5 * 0.32)
+          if (item.desc) {
+            ctx.fillStyle = 'rgba(210,195,255,1)'; ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 8
+            ctx.font = `400 ${Math.round(fontSize * 0.55)}px "PingFang SC", sans-serif`
+            ctx.strokeStyle = 'rgba(139,92,246,0.25)'; ctx.lineWidth = 1
+            ctx.strokeText(item.desc, px2 + numW3, py2 + cellH5 * 0.72); ctx.fillText(item.desc, px2 + numW3, py2 + cellH5 * 0.72)
+          }
           ctx.restore()
         }
       }
@@ -1012,6 +1171,8 @@ class AnimEngine {
 
       this.animId = requestAnimationFrame(ts => this.draw(ts)); return
     }
+
+
 
     const centerY = ch * 0.38
     const topY = ch * 0.065
@@ -1704,28 +1865,14 @@ export default function RecorderPlayer({ data, onClose, shapeType = -1, styleOpt
       const lastCardAppear = slideEnd2 + 200 + (n - 1) * cardDur
       meltStart = lastCardAppear + 300
     } else if (animationStyle === 'tech') {
-      // tech: boomStart = dancingStart + (n-1)*phraseGap + phraseDur + staticDur
       const titleText = data.title || ''
-      const phrases = []
-      for (let i = 0; i < titleText.length; i += 3) {
-        const chunk = titleText.slice(i, i + 3)
-        if (chunk) phrases.push({ text: chunk })
-      }
-      data.points.forEach(pt => {
-        const label = pt.label || ''
-        for (let i = 0; i < label.length; i += 3) {
-          const chunk = label.slice(i, i + 3)
-          if (chunk) phrases.push({ text: chunk })
-        }
-      })
-      const phraseDur = 2200
-      const phraseGap = 700
-      const titleTypingDur = 50 + titleText.length * 120
-      const dancingStart = titleTypingDur + 300
-      const lastPhraseExit = dancingStart + (phrases.length - 1) * phraseGap + phraseDur
-      const staticStart = lastPhraseExit + 1200
-      const boomStart = staticStart + 1800
-      meltStart = boomStart
+      const n2 = data.points.length
+      const phase1Start = 50 + titleText.length * 120 + 500
+      const phase1Dur = (n2 - 1) * 300 + 6000
+      const phase2Start = phase1Start + phase1Dur + 1000
+      const phase2Dur = (n2 - 1) * 300 + 6000
+      const gridStart2 = phase2Start + phase2Dur + 1000
+      meltStart = gridStart2 + 2000
     } else {
       const slideEnd2 = titleEnd + 600
       const gridAppear2 = slideEnd2 + 100
