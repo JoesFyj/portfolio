@@ -969,9 +969,7 @@ export default function VideoGenerator({ data, theme = 'deep-space', onClose }) 
     engine.onProgress = setProgress
     engine.onDone = () => {
       setIsPlaying(false)
-      if (record && recorderRef.current?.state !== 'inactive') {
-        recorderRef.current.stop()
-      }
+      if (record) recorderRef.current?.stop()
     }
 
     if (record) {
@@ -995,11 +993,11 @@ export default function VideoGenerator({ data, theme = 'deep-space', onClose }) 
 
   const stopAnim = useCallback(() => {
     engineRef.current?.stop()
-    if (recorderRef.current?.state !== 'inactive') recorderRef.current.stop()
+    recorderRef.current?.stop()
     setIsPlaying(false); setIsRecording(false)
   }, [])
 
-  useEffect(() => () => { engineRef.current?.stop(); if (recorderRef.current?.state !== 'inactive') recorderRef.current.stop() }, [])
+  useEffect(() => () => { engineRef.current?.stop(); recorderRef.current?.stop() }, [])
 
   if (!data) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400, background: '#0a0a0f', borderRadius: 12, color: 'rgba(255,255,255,0.4)' }}>
