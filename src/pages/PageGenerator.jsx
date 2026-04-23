@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import RecorderPlayer from './RecorderPlayer'
-import TestVideo from '../components/TestVideo'
+import VideoGenerator from '../components/VideoGenerator'
 import {
   SHAPE_GROUPS,
   SHAPE_OPTIONS,
@@ -272,8 +272,9 @@ export default function PageGenerator() {
     <div className="min-h-screen" style={{ background: '#FAF9F6' }}>
       {/* 录屏全屏播放器 */}
       {showRecorder && summarizedData && (
-        <TestVideo
+        <VideoGenerator
           data={summarizedData}
+          theme="deep-space"
           onClose={handleClose}
         />
       )}
