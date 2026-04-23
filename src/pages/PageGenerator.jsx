@@ -238,15 +238,18 @@ export default function PageGenerator() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log('API返回:', data)
+        console.log('API返回:', JSON.stringify(data))
+        console.log('data.error =', data.error, 'data.title =', data.title)
         if (data.error) {
+          console.log('触发error分支')
           setError(data.error)
           setIsLoading(false)
           return
         }
-        console.log('设置summarizedData, showRecorder=true')
+        console.log('准备setSummarizedData, points数量:', data.points?.length)
         setSummarizedData(data)
         setIsLoading(false)
+        console.log('setShowRecorder(true)')
         setShowRecorder(true)
       })
       .catch(() => {
@@ -270,9 +273,13 @@ export default function PageGenerator() {
       {/* 录屏全屏播放器 */}
       {showRecorder && summarizedData && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(10,10,15,0.95)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)',
+          position: 'fixed', inset: 0, zIndex: 9999, background: '#0a0a0f',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          overflow: 'auto',
         }}>
+          <div style={{ color: '#fff', fontSize: 14, marginBottom: 12 }}>
+            ✅ 视频生成器已加载 · {summarizedData.title} · {summarizedData.points?.length}个要点
+          </div>
           <VideoGenerator
             data={summarizedData}
             theme="deep-space"
