@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '内容过长，请控制在8000字以内' })
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  const apiKey = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY || 'sk-03b7389365fc45aa9964e9378d3c45b9'
 
   if (!apiKey) {
     return res.status(500).json({ error: 'DeepSeek API 未配置，请联系站长' })
