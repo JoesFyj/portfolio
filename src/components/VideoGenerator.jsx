@@ -43,6 +43,38 @@ const THEMES = {
     watermark: 'rgba(168,85,247,0.2)',
     cardColors: ['#a855f7', '#ec4899', '#06b6d4', '#f97316', '#10b981'],
   },
+  // ============================================================
+  // 赛博水墨 ⭐NEW
+  // ============================================================
+  'cyber-ink': {
+    name: '赛博水墨',
+    bg: ['#0a0a0f', '#12121f', '#1a1a2e'],
+    accent: '#00fff7',
+    particles: { color: '#00fff7', count: 40 },
+    glow: 'rgba(0,255,247,0.4)',
+    watermark: 'rgba(0,255,247,0.25)',
+    cardColors: ['#00fff7', '#ff2d55', '#ffd700', '#ff2d55', '#00fff7'],
+    // 赛博水墨特效
+    style: 'cyber-ink',
+    brushTexture: true,
+    scanLines: true,
+  },
+  // ============================================================
+  // 禅意极简 ⭐NEW
+  // ============================================================
+  'zen-minimal': {
+    name: '禅意极简',
+    bg: ['#ffffff', '#fafaf8', '#f5f5f0'],
+    accent: '#2c2c2c',
+    particles: { color: '#9b9b9b', count: 20 },
+    glow: 'rgba(44,44,44,0.15)',
+    watermark: 'rgba(44,44,44,0.2)',
+    cardColors: ['#2c2c2c', '#4a4a4a', '#6a6a6a', '#8a8a8a', '#aaaaaa'],
+    // 禅意极简特效
+    style: 'zen-minimal',
+    singleLine: true,
+    breathingEffect: true,
+  },
 }
 
 // ============================================================
@@ -118,6 +150,97 @@ class Engine {
   // ---- 背景 ----
   drawBg(t) {
     const { ctx, cw, ch, theme } = this
+
+    // ============================================================
+    // 赛博水墨风格
+    // ============================================================
+    if (theme.style === 'cyber-ink') {
+      // 深墨色渐变
+      const g = ctx.createLinearGradient(0, 0, 0, ch)
+      g.addColorStop(0, '#0a0a0f')
+      g.addColorStop(0.5, '#12121f')
+      g.addColorStop(1, '#1a1a2e')
+      ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch)
+
+      // 扫描线效果
+      if (t > 0) {
+        const scanY = (t / 2000) % ch
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        const scanGrad = ctx.createLinearGradient(0, scanY - 20, 0, scanY + 20)
+        scanGrad.addColorStop(0, 'transparent')
+        scanGrad.addColorStop(0.5, '#00fff7')
+        scanGrad.addColorStop(1, 'transparent')
+        ctx.fillStyle = scanGrad
+        ctx.fillRect(0, scanY - 20, cw, 40)
+        ctx.restore()
+      }
+
+      // 背景网格
+      ctx.strokeStyle = 'rgba(0,255,247,0.05)'; ctx.lineWidth = 0.5
+      for (let y = 0; y < ch; y += 80) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke()
+      }
+      for (let x = 0; x < cw; x += 80) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ch); ctx.stroke()
+      }
+
+      // 粒子
+      this.particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0) p.x = cw; if (p.x > cw) p.x = 0
+        if (p.y < 0) p.y = ch; if (p.y > ch) p.y = 0
+        ctx.globalAlpha = p.alpha * 0.6
+        ctx.fillStyle = theme.particles.color
+        ctx.shadowColor = theme.particles.color
+        ctx.shadowBlur = 8
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill()
+      })
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0
+      return
+    }
+
+    // ============================================================
+    // 禅意极简风格
+    // ============================================================
+    if (theme.style === 'zen-minimal') {
+      // 极淡米灰渐变
+      const g = ctx.createLinearGradient(0, 0, 0, ch)
+      g.addColorStop(0, '#ffffff')
+      g.addColorStop(0.3, '#fafaf8')
+      g.addColorStop(1, '#f5f5f0')
+      ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch)
+
+      // 右上角枯枝装饰
+      ctx.save()
+      ctx.strokeStyle = 'rgba(44,44,44,0.08)'
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.moveTo(cw - 50, 50)
+      ctx.quadraticCurveTo(cw - 120, 80, cw - 180, 60)
+      ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(cw - 120, 80)
+      ctx.lineTo(cw - 140, 55)
+      ctx.stroke()
+      ctx.restore()
+
+      // 极少粒子
+      this.particles.forEach(p => {
+        p.x += p.vx * 0.3; p.y += p.vy * 0.3
+        if (p.x < 0) p.x = cw; if (p.x > cw) p.x = 0
+        if (p.y < 0) p.y = ch; if (p.y > ch) p.y = 0
+        ctx.globalAlpha = p.alpha * 0.3
+        ctx.fillStyle = '#d0d0d0'
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2); ctx.fill()
+      })
+      ctx.globalAlpha = 1
+      return
+    }
+
+    // ============================================================
+    // 默认风格（深空/暮夜/极光）
+    // ============================================================
     const [b1, b2, b3] = theme.bg
 
     // 渐变
@@ -158,7 +281,34 @@ class Engine {
   // ---- 水印 ----
   drawWatermark() {
     const { ctx, cw, ch, theme } = this
-    ctx.save(); ctx.globalAlpha = 0.35
+    ctx.save()
+
+    // 赛博水墨风格 - 霓虹水印
+    if (theme.style === 'cyber-ink') {
+      ctx.globalAlpha = 0.5
+      ctx.fillStyle = '#00fff7'
+      ctx.font = '600 20px "PingFang SC", sans-serif'
+      ctx.textAlign = 'right'
+      ctx.shadowColor = '#00fff7'
+      ctx.shadowBlur = 15
+      ctx.fillText('@小福AI自由', cw - 28, ch - 24)
+      ctx.restore()
+      return
+    }
+
+    // 禅意极简风格 - 淡雅水印
+    if (theme.style === 'zen-minimal') {
+      ctx.globalAlpha = 0.25
+      ctx.fillStyle = '#2c2c2c'
+      ctx.font = '400 16px "PingFang SC", sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText('@小福AI自由', cw - 28, ch - 24)
+      ctx.restore()
+      return
+    }
+
+    // 默认风格
+    ctx.globalAlpha = 0.35
     ctx.fillStyle = theme.watermark
     ctx.font = '600 20px "PingFang SC", sans-serif'
     ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'
@@ -173,6 +323,82 @@ class Engine {
     if (t < tl.titleStart) return
 
     ctx.save()
+
+    // ============================================================
+    // 赛博水墨风格 - 水墨晕染标题
+    // ============================================================
+    if (theme.style === 'cyber-ink') {
+      const titleProgress = Math.min(1, (t - tl.titleStart) / 800)
+      const fontSize = 52
+
+      // 水墨晕染背景
+      const inkGrad = ctx.createRadialGradient(cw / 2, ch * 0.12, 0, cw / 2, ch * 0.12, cw * 0.5)
+      inkGrad.addColorStop(0, `rgba(0,255,247,${0.15 * titleProgress})`)
+      inkGrad.addColorStop(0.5, `rgba(0,255,247,${0.05 * titleProgress})`)
+      inkGrad.addColorStop(1, 'transparent')
+      ctx.fillStyle = inkGrad
+      ctx.fillRect(0, 0, cw, ch)
+
+      // 标题文字（霓虹渐变）
+      ctx.globalAlpha = titleProgress
+      ctx.font = `900 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      const textGrad = ctx.createLinearGradient(cw * 0.3, 0, cw * 0.7, 0)
+      textGrad.addColorStop(0, '#00fff7')
+      textGrad.addColorStop(0.5, '#ffffff')
+      textGrad.addColorStop(1, '#ff2d55')
+      ctx.fillStyle = textGrad
+      ctx.shadowColor = '#00fff7'
+      ctx.shadowBlur = 30 * titleProgress
+      ctx.fillText(title, cw / 2, ch * 0.12)
+
+      // 装饰线
+      if (titleProgress > 0.5) {
+        ctx.globalAlpha = (titleProgress - 0.5) * 2
+        ctx.strokeStyle = '#ffd700'
+        ctx.lineWidth = 2
+        const lw = Math.min(400, ctx.measureText(title).width + 60)
+        ctx.beginPath()
+        ctx.moveTo(cw / 2 - lw / 2, ch * 0.17)
+        ctx.lineTo(cw / 2 + lw / 2, ch * 0.17)
+        ctx.stroke()
+      }
+
+      ctx.restore()
+      return
+    }
+
+    // ============================================================
+    // 禅意极简风格 - 墨滴淡入标题
+    // ============================================================
+    if (theme.style === 'zen-minimal') {
+      const titleProgress = Math.min(1, (t - tl.titleStart) / 1200)
+      const floatOffset = (1 - titleProgress) * 20
+      const fontSize = 44
+
+      // 墨滴晕染
+      const inkGrad = ctx.createRadialGradient(cw / 2, ch * 0.1, 0, cw / 2, ch * 0.1, cw * 0.4)
+      inkGrad.addColorStop(0, `rgba(44,44,44,${0.08 * titleProgress})`)
+      inkGrad.addColorStop(1, 'transparent')
+      ctx.fillStyle = inkGrad
+      ctx.fillRect(0, 0, cw, ch)
+
+      ctx.globalAlpha = titleProgress
+      ctx.font = `300 ${fontSize}px "PingFang SC", "Microsoft YaHei", sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#2c2c2c'
+      ctx.fillText(title, cw / 2, ch * 0.1 - floatOffset)
+
+      ctx.restore()
+      return
+    }
+
+    // ============================================================
+    // 默认风格
+    // ============================================================
 
     if (t < tl.titleEnd) {
       // === 打字机阶段 ===
@@ -251,6 +477,150 @@ class Engine {
     const startY = 190
     const colors = theme.cardColors
 
+    // ============================================================
+    // 赛博水墨风格
+    // ============================================================
+    if (theme.style === 'cyber-ink') {
+      pts.forEach((pt, i) => {
+        const itemStart = tl.contentStart + i * tl.itemDur
+        if (t < itemStart) return
+
+        const localT = t - itemStart
+        const color = colors[i % colors.length]
+
+        // 入场动画（毛笔描边效果）
+        let progress = 1
+        if (localT < 600) {
+          progress = easeOutCubic(localT / 600)
+        }
+
+        const y = startY + i * (cardH + gap)
+        ctx.save()
+        ctx.globalAlpha = Math.min(progress, 1)
+
+        // 卡片背景
+        ctx.fillStyle = 'rgba(0,255,247,0.03)'
+        roundedRect(ctx, cardX, y, cardW, cardH, 12)
+        ctx.fill()
+
+        // 毛笔描边
+        ctx.strokeStyle = color
+        ctx.lineWidth = 1.5
+        ctx.shadowColor = color
+        ctx.shadowBlur = 10 * progress
+        // 逐笔勾勒边框
+        this._drawBrushStroke(ctx, cardX, y, cardW, cardH, progress)
+
+        // 标签文字
+        const kw = pt.label || pt.kw || ''
+        if (progress > 0.4) {
+          const labelAlpha = (progress - 0.4) / 0.6
+          ctx.globalAlpha = labelAlpha
+          ctx.font = '700 36px "PingFang SC", sans-serif'
+          ctx.textAlign = 'left'
+          ctx.fillStyle = color
+          ctx.shadowBlur = 15
+          ctx.fillText(kw.slice(0, 10), cardX + 30, y + 60)
+
+          // 描述
+          const desc = pt.desc || pt.short || ''
+          ctx.font = '400 24px "PingFang SC", sans-serif'
+          ctx.fillStyle = 'rgba(255,255,255,0.6)'
+          ctx.shadowBlur = 5
+          this._wrapText(ctx, desc.slice(0, 20), cardX + 30, y + 120, cardW - 60, 32)
+        }
+
+        // 霓虹装饰
+        if (progress > 0.6) {
+          const decoAlpha = (progress - 0.6) / 0.4
+          ctx.globalAlpha = decoAlpha * 0.5
+          ctx.fillStyle = color
+          ctx.shadowBlur = 15
+          ctx.beginPath()
+          ctx.arc(cardX + cardW - 60, y + cardH / 2, 15, 0, Math.PI * 2)
+          ctx.fill()
+        }
+
+        ctx.restore()
+      })
+      return
+    }
+
+    // ============================================================
+    // 禅意极简风格
+    // ============================================================
+    if (theme.style === 'zen-minimal') {
+      pts.forEach((pt, i) => {
+        const itemStart = tl.contentStart + i * tl.itemDur
+        if (t < itemStart) return
+
+        const localT = t - itemStart
+        const color = colors[i % colors.length]
+        const breathe = 0.5 + 0.5 * Math.sin(localT / 800)
+
+        // 极缓入场
+        let progress = 1
+        if (localT < 800) {
+          progress = easeOutCubic(localT / 800)
+        }
+
+        const y = startY + i * (cardH + gap)
+        ctx.save()
+        ctx.globalAlpha = Math.min(progress * 0.9, 1)
+
+        // 单线卡片背景
+        ctx.fillStyle = 'rgba(0,0,0,0.02)'
+        roundedRect(ctx, cardX, y, cardW, cardH, 4)
+        ctx.fill()
+
+        // 单线边框
+        ctx.strokeStyle = `rgba(44,44,44,${0.15 * progress})`
+        ctx.lineWidth = 0.5
+        this._drawBrushStroke(ctx, cardX, y, cardW, cardH, progress)
+
+        // 角落装饰
+        const cornerLen = 20
+        ctx.strokeStyle = `rgba(44,44,44,${0.2 * progress})`
+        ctx.lineWidth = 0.5
+        // 左上
+        ctx.beginPath()
+        ctx.moveTo(cardX, y + cornerLen)
+        ctx.lineTo(cardX, y)
+        ctx.lineTo(cardX + cornerLen, y)
+        ctx.stroke()
+        // 右下
+        ctx.beginPath()
+        ctx.moveTo(cardX + cardW - cornerLen, y + cardH)
+        ctx.lineTo(cardX + cardW, y + cardH)
+        ctx.lineTo(cardX + cardW, y + cardH - cornerLen)
+        ctx.stroke()
+
+        // 标签文字（呼吸感）
+        const kw = pt.label || pt.kw || ''
+        if (progress > 0.4) {
+          const labelAlpha = (progress - 0.4) / 0.6
+          ctx.globalAlpha = labelAlpha * (0.7 + breathe * 0.3)
+          ctx.font = '500 34px "PingFang SC", sans-serif'
+          ctx.textAlign = 'left'
+          ctx.fillStyle = color
+          ctx.fillText(kw.slice(0, 10), cardX + 25, y + 55)
+
+          // 描述（更淡）
+          const desc = pt.desc || pt.short || ''
+          ctx.globalAlpha = labelAlpha * (0.4 + breathe * 0.2)
+          ctx.font = '300 22px "PingFang SC", sans-serif'
+          ctx.fillStyle = '#9b9b9b'
+          this._wrapText(ctx, desc.slice(0, 15), cardX + 25, y + 110, cardW - 50, 30)
+        }
+
+        ctx.restore()
+      })
+      return
+    }
+
+    // ============================================================
+    // 默认风格
+    // ============================================================
     pts.forEach((pt, i) => {
       const itemStart = tl.contentStart + i * tl.itemDur
       if (t < itemStart) return
@@ -336,6 +706,39 @@ class Engine {
     if (line) ctx.fillText(line, x, ly)
   }
 
+  // 逐笔勾勒边框（用于毛笔/单线效果）
+  _drawBrushStroke(ctx, x, y, w, h, progress) {
+    const radius = 4
+    const perimeter = w * 2 + h * 2
+    const drawnLength = perimeter * progress
+
+    const segments = [
+      { sx: x + radius, sy: y, ex: x + w - radius, ey: y },           // 上
+      { sx: x + w, sy: y + radius, ex: x + w, ey: y + h - radius },   // 右
+      { sx: x + w - radius, sy: y + h, ex: x + radius, ey: y + h },   // 下
+      { sx: x, sy: y + h - radius, ex: x, ey: y + radius },            // 左
+    ]
+
+    let currentLength = 0
+    segments.forEach(seg => {
+      const segLen = Math.abs(seg.ex - seg.sx) + Math.abs(seg.ey - seg.sy)
+      if (currentLength + segLen <= drawnLength) {
+        ctx.beginPath()
+        ctx.moveTo(seg.sx, seg.sy)
+        ctx.lineTo(seg.ex, seg.ey)
+        ctx.stroke()
+      } else if (currentLength < drawnLength) {
+        const remaining = drawnLength - currentLength
+        const ratio = remaining / segLen
+        ctx.beginPath()
+        ctx.moveTo(seg.sx, seg.sy)
+        ctx.lineTo(seg.sx + (seg.ex - seg.sx) * ratio, seg.sy + (seg.ey - seg.sy) * ratio)
+        ctx.stroke()
+      }
+      currentLength += segLen
+    })
+  }
+
   // 装饰图形
   _drawDeco(ctx, idx, color, alpha, localT, cx, cy, cw, ch) {
     ctx.save()
@@ -385,6 +788,118 @@ class Engine {
     if (t < tl.endStart) return
     const p = Math.min(1, (t - tl.endStart) / 2000)
 
+    // ============================================================
+    // 赛博水墨风格 - 全息扫描收尾
+    // ============================================================
+    if (theme.style === 'cyber-ink') {
+      // 全息扫描线
+      const scanY = ch * (1 - p)
+      ctx.save()
+      ctx.globalAlpha = 0.4
+      const scanGrad = ctx.createLinearGradient(0, scanY - 40, 0, scanY + 40)
+      scanGrad.addColorStop(0, 'transparent')
+      scanGrad.addColorStop(0.5, '#00fff7')
+      scanGrad.addColorStop(1, 'transparent')
+      ctx.fillStyle = scanGrad
+      ctx.fillRect(0, scanY - 40, cw, 80)
+      ctx.restore()
+
+      // 全息边框
+      ctx.save()
+      ctx.globalAlpha = p * 0.5
+      ctx.strokeStyle = '#00fff7'
+      ctx.lineWidth = 1
+      ctx.setLineDash([20, 10])
+      ctx.strokeRect(20, 20, cw - 40, ch - 40)
+      ctx.setLineDash([])
+      ctx.restore()
+
+      // 标题重现
+      if (p > 0.2 && p < 0.9) {
+        const a = Math.min(1, (p - 0.2) / 0.3) * Math.min(1, (0.9 - p) / 0.2)
+        ctx.save()
+        ctx.globalAlpha = a
+        ctx.font = '900 48px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        const textGrad = ctx.createLinearGradient(cw * 0.3, 0, cw * 0.7, 0)
+        textGrad.addColorStop(0, '#00fff7')
+        textGrad.addColorStop(0.5, '#ffffff')
+        textGrad.addColorStop(1, '#ff2d55')
+        ctx.fillStyle = textGrad
+        ctx.shadowColor = '#00fff7'
+        ctx.shadowBlur = 20
+        ctx.fillText(data.title || '', cw / 2, ch / 2 - 30)
+        ctx.shadowBlur = 0
+        ctx.font = '500 22px "PingFang SC", sans-serif'
+        ctx.fillStyle = '#ffd700'
+        ctx.fillText('— @小福AI自由 —', cw / 2, ch / 2 + 30)
+        ctx.restore()
+      }
+      return
+    }
+
+    // ============================================================
+    // 禅意极简风格 - 涟漪消散收尾
+    // ============================================================
+    if (theme.style === 'zen-minimal') {
+      // 涟漪效果
+      const rippleRadius = cw * 0.8 * p
+      ctx.save()
+      for (let i = 0; i < 3; i++) {
+        const ringProgress = Math.max(0, p - i * 0.15)
+        const ringAlpha = (1 - ringProgress) * 0.3
+        const ringRadius = rippleRadius * (0.3 + ringProgress * 0.7)
+        ctx.globalAlpha = ringAlpha
+        ctx.strokeStyle = '#9b9b9b'
+        ctx.lineWidth = 0.5
+        ctx.beginPath()
+        ctx.arc(cw / 2, ch / 2, ringRadius, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      ctx.restore()
+
+      // 标题重现（极淡）
+      if (p > 0.2 && p < 0.85) {
+        const a = Math.min(1, (p - 0.2) / 0.3) * Math.min(1, (0.85 - p) / 0.2)
+        ctx.save()
+        ctx.globalAlpha = a * 0.7
+        ctx.font = '300 40px "PingFang SC", "Microsoft YaHei", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillStyle = '#2c2c2c'
+        ctx.fillText(data.title || '', cw / 2, ch / 2 - 20)
+        ctx.globalAlpha = a * 0.4
+        ctx.font = '300 18px "PingFang SC", sans-serif'
+        ctx.fillStyle = '#9b9b9b'
+        ctx.fillText('少即是多', cw / 2, ch / 2 + 20)
+        ctx.restore()
+      }
+
+      // 印章
+      if (p > 0.5) {
+        const sealAlpha = Math.min(1, (p - 0.5) / 0.3)
+        ctx.save()
+        ctx.globalAlpha = sealAlpha * 0.5
+        const sx = cw - 80
+        const sy = ch - 80
+        const sealSize = 40
+        ctx.strokeStyle = '#2c2c2c'
+        ctx.lineWidth = 1
+        ctx.strokeRect(sx - sealSize / 2, sy - sealSize / 2, sealSize, sealSize)
+        ctx.font = '700 24px "KaiTi", "STKaiti", serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillStyle = '#2c2c2c'
+        ctx.fillText('禅', sx, sy)
+        ctx.restore()
+      }
+      return
+    }
+
+    // ============================================================
+    // 默认风格
+    // ============================================================
     // 渐变遮罩
     ctx.save(); ctx.globalAlpha = p * 0.5
     ctx.fillStyle = theme.bg[0]; ctx.fillRect(0, 0, cw, ch)
