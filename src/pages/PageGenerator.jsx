@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import RecorderPlayer from './RecorderPlayer'
-import VideoGenerator from '../components/VideoGenerator'
+import TestVideo from '../components/TestVideo'
 import {
   SHAPE_GROUPS,
   SHAPE_OPTIONS,
@@ -272,20 +272,10 @@ export default function PageGenerator() {
     <div className="min-h-screen" style={{ background: '#FAF9F6' }}>
       {/* 录屏全屏播放器 */}
       {showRecorder && summarizedData && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999, background: '#0a0a0f',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          overflow: 'auto',
-        }}>
-          <div style={{ color: '#fff', fontSize: 14, marginBottom: 12 }}>
-            ✅ 视频生成器已加载 · {summarizedData.title} · {summarizedData.points?.length}个要点
-          </div>
-          <VideoGenerator
-            data={summarizedData}
-            theme="deep-space"
-            onClose={handleClose}
-          />
-        </div>
+        <TestVideo
+          data={summarizedData}
+          onClose={handleClose}
+        />
       )}
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="mb-10 text-center">
