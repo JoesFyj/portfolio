@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint *)",
+      "Bash(node -e ' *)",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/xiaofu/.claude"
+    ]
+  }
+}

@@ -1,47 +1,59 @@
 {
-  "hash": "b05499e1",
+  "hash": "de73bdc5",
   "configHash": "597fdb61",
-  "lockfileHash": "f9d17aea",
-  "browserHash": "4cf1d799",
+  "lockfileHash": "430eca1b",
+  "browserHash": "f42f57d9",
   "optimized": {
+    "@ffmpeg/ffmpeg": {
+      "src": "../../node_modules/.pnpm/@ffmpeg+ffmpeg@0.12.15/node_modules/@ffmpeg/ffmpeg/dist/esm/index.js",
+      "file": "@ffmpeg_ffmpeg.js",
+      "fileHash": "a4f93769",
+      "needsInterop": false
+    },
+    "@ffmpeg/util": {
+      "src": "../../node_modules/.pnpm/@ffmpeg+util@0.12.2/node_modules/@ffmpeg/util/dist/esm/index.js",
+      "file": "@ffmpeg_util.js",
+      "fileHash": "34429a70",
+      "needsInterop": false
+    },
     "lucide-react": {
-      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "src": "../../node_modules/.pnpm/lucide-react@1.8.0_react@19.2.5/node_modules/lucide-react/dist/esm/lucide-react.js",
       "file": "lucide-react.js",
-      "fileHash": "8943f3ab",
+      "fileHash": "d3afb3f0",
       "needsInterop": false
     },
     "react-dom/client": {
-      "src": "../../node_modules/react-dom/client.js",
+      "src": "../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/client.js",
       "file": "react-dom_client.js",
-      "fileHash": "f0752f0e",
+      "fileHash": "2f747436",
       "needsInterop": true
     },
     "react-router-dom": {
-      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "src": "../../node_modules/.pnpm/react-router-dom@7.14.2_react-dom@19.2.5_react@19.2.5__react@19.2.5/node_modules/react-router-dom/dist/index.mjs",
       "file": "react-router-dom.js",
-      "fileHash": "b604ca7f",
+      "fileHash": "baf0ee1b",
       "needsInterop": false
     },
     "react": {
-      "src": "../../node_modules/react/index.js",
+      "src": "../../node_modules/.pnpm/react@19.2.5/node_modules/react/index.js",
       "file": "react.js",
-      "fileHash": "93fcd3d7",
+      "fileHash": "d5033145",
       "needsInterop": true
     },
     "react/jsx-dev-runtime": {
-      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "src": "../../node_modules/.pnpm/react@19.2.5/node_modules/react/jsx-dev-runtime.js",
       "file": "react_jsx-dev-runtime.js",
-      "fileHash": "e1a0dd07",
+      "fileHash": "fbc68c81",
       "needsInterop": true
     }
   },
   "chunks": {
-    "react-3_O8oni9": {
-      "file": "react-3_O8oni9.js",
+    "react-DOFghJpM": {
+      "file": "react-DOFghJpM.js",
       "isDynamicEntry": false
     },
-    "react-dom-DKYhWFhx": {
-      "file": "react-dom-DKYhWFhx.js",
+    "react-dom-CxLleQ0w": {
+      "file": "react-dom-CxLleQ0w.js",
       "isDynamicEntry": false
     }
   }

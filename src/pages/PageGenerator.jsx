@@ -274,7 +274,7 @@ export default function PageGenerator() {
       {showRecorder && summarizedData && (
         <VideoGenerator
           data={summarizedData}
-          theme={mainStyle === 'chinese' ? 'deep-space' : mainStyle === 'city' ? 'midnight-gold' : mainStyle === 'ai' ? 'aurora' : mainStyle === 'cyber-ink' ? 'cyber-ink' : 'zen-minimal'}
+          theme="deep-space"
           onClose={handleClose}
         />
       )}
@@ -293,7 +293,7 @@ export default function PageGenerator() {
               <p className="text-sm font-semibold" style={{ color: '#6B6860' }}>选择一套视频风格</p>
               <p className="text-xs mt-1" style={{ color: '#A8A29E' }}>选择后可切换，共 {LANDMARK_OPTIONS.length + SHAPE_OPTIONS.length} 种封面</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 风格一：中国风 */}
               <button
                 onClick={() => setMainStyle('chinese')}
@@ -349,6 +349,7 @@ export default function PageGenerator() {
                 style={{ cursor: 'pointer', border: '2px solid #E8E5DF' }}
               >
                 <div style={{ height: '280px', background: '#080c14', position: 'relative', overflow: 'hidden' }}>
+                  {/* 粒子 */}
                   {Array.from({ length: 20 }).map((_, i) => (
                     <div key={i} style={{ position: 'absolute', left: `${(i * 37 + 5) % 100}%`, top: `${(i * 23 + 3) % 60}%`, width: 2, height: 2, borderRadius: '50%', background: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#a855f7' : '#ffffff', opacity: 0.3 }} />
                   ))}
@@ -364,58 +365,6 @@ export default function PageGenerator() {
                 <div style={{ padding: '16px', background: '#FFFFFF' }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px', color: '#1C1C1E' }}>AI 科技风格</div>
                   <div style={{ fontSize: '12px', color: '#6B6860' }}>AI 工具/模型/公司 logo · 波浪式动感动画</div>
-                </div>
-              </button>
-
-              {/* 风格四：赛博水墨 */}
-              <button
-                onClick={() => setMainStyle('cyber-ink')}
-                className="rounded-2xl overflow-hidden transition-all hover:scale-[1.02] text-left"
-                style={{ cursor: 'pointer', border: '2px solid #E8E5DF' }}
-              >
-                <div style={{ height: '280px', background: 'linear-gradient(180deg, #0a0a0f 0%, #12121f 50%, #1a1a2e 100%)', position: 'relative', overflow: 'hidden' }}>
-                  {/* 扫描线 */}
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} style={{ position: 'absolute', left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(0,255,247,0.3), transparent)', top: `${(i * 15 + 10) % 100}%` }} />
-                  ))}
-                  {/* 霓虹灯笼 */}
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '100px', height: '130px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    <div style={{ width: 60, height: 80, border: '2px solid #00fff7', borderRadius: '8px', boxShadow: '0 0 20px rgba(0,255,247,0.5)' }} />
-                    <div style={{ width: 2, height: 20, background: '#00fff7', boxShadow: '0 0 10px rgba(0,255,247,0.8)' }} />
-                  </div>
-                  <div style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, textAlign: 'center' }}>
-                    <div style={{ color: '#00fff7', fontWeight: '700', fontSize: '18px', fontFamily: 'PingFang SC, sans-serif', textShadow: '0 0 10px rgba(0,255,247,0.8)' }}>赛博水墨</div>
-                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginTop: '4px' }}>水墨 × 霓虹</div>
-                  </div>
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', fontSize: '11px', color: 'rgba(0,255,247,0.6)' }}>🔮 NEW</div>
-                </div>
-                <div style={{ padding: '16px', background: '#FFFFFF' }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px', color: '#1C1C1E' }}>赛博水墨风格</div>
-                  <div style={{ fontSize: '12px', color: '#6B6860' }}>数字文人气质 · 毛笔描边 · 霓虹粒子 · 全息收尾</div>
-                </div>
-              </button>
-
-              {/* 风格五：禅意极简 */}
-              <button
-                onClick={() => setMainStyle('zen-minimal')}
-                className="rounded-2xl overflow-hidden transition-all hover:scale-[1.02] text-left"
-                style={{ cursor: 'pointer', border: '2px solid #E8E5DF' }}
-              >
-                <div style={{ height: '280px', background: 'linear-gradient(180deg, #ffffff 0%, #fafaf8 50%, #f5f5f0 100%)', position: 'relative', overflow: 'hidden' }}>
-                  {/* 禅意装饰线条 */}
-                  <div style={{ position: 'absolute', top: '20px', right: '20px', width: 60, height: 1, background: '#d0d0d0' }} />
-                  <div style={{ position: 'absolute', top: '20px', right: '20px', width: 1, height: 40, background: '#d0d0d0' }} />
-                  {/* 单线卡片预览 */}
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '70%', height: '40%', border: '1px solid rgba(44,44,44,0.2)', borderRadius: '4px' }} />
-                  <div style={{ position: 'absolute', bottom: '20px', left: 0, right: 0, textAlign: 'center' }}>
-                    <div style={{ color: '#2c2c2c', fontWeight: '700', fontSize: '18px', fontFamily: 'PingFang SC, sans-serif' }}>禅意极简</div>
-                    <div style={{ color: '#9b9b9b', fontSize: '12px', marginTop: '4px' }}>禅宗 × 极简</div>
-                  </div>
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', fontSize: '11px', color: 'rgba(44,44,44,0.4)' }}>🍃 NEW</div>
-                </div>
-                <div style={{ padding: '16px', background: '#FFFFFF' }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px', color: '#1C1C1E' }}>禅意极简风格</div>
-                  <div style={{ fontSize: '12px', color: '#6B6860' }}>冥想式体验 · 单线书写 · 呼吸脉动 · 涟漪消散</div>
                 </div>
               </button>
             </div>
@@ -434,8 +383,8 @@ export default function PageGenerator() {
                 >
                   ← 重新选择风格
                 </button>
-                <span style={{ fontSize: '12px', fontWeight: '700', padding: '6px 12px', borderRadius: '8px', background: mainStyle === 'chinese' ? '#1a1a1a' : mainStyle === 'city' ? '#0d1b2a' : mainStyle === 'ai' ? '#080c14' : mainStyle === 'cyber-ink' ? '#0a0a0f' : '#ffffff', color: mainStyle === 'chinese' ? '#fff' : mainStyle === 'city' ? '#f5d87a' : mainStyle === 'ai' ? '#a855f7' : mainStyle === 'cyber-ink' ? '#00fff7' : '#2c2c2c', border: `1px solid ${mainStyle === 'chinese' ? '#8b5cf6' : mainStyle === 'city' ? '#d4a017' : mainStyle === 'ai' ? '#a855f7' : mainStyle === 'cyber-ink' ? '#00fff7' : '#2c2c2c'}` }}>
-                  {mainStyle === 'chinese' ? '🏮 中国风' : mainStyle === 'city' ? '🌆 城市地标' : mainStyle === 'ai' ? '🤖 AI科技' : mainStyle === 'cyber-ink' ? '🔮 赛博水墨' : '🍃 禅意极简'}
+                <span style={{ fontSize: '12px', fontWeight: '700', padding: '6px 12px', borderRadius: '8px', background: mainStyle === 'chinese' ? '#1a1a1a' : mainStyle === 'city' ? '#0d1b2a' : '#080c14', color: mainStyle === 'chinese' ? '#fff' : mainStyle === 'city' ? '#f5d87a' : '#a855f7', border: `1px solid ${mainStyle === 'chinese' ? '#8b5cf6' : mainStyle === 'city' ? '#d4a017' : '#a855f7'}` }}>
+                  {mainStyle === 'chinese' ? '🏮 中国风' : mainStyle === 'city' ? '🌆 城市地标' : '🤖 AI科技'}
                 </span>
               </div>
 
@@ -600,66 +549,6 @@ export default function PageGenerator() {
                         </div>
                       )
                     })}
-                  </div>
-                )}
-
-                {/* ====== 赛博水墨选项 ====== */}
-                {mainStyle === 'cyber-ink' && (
-                  <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(0,255,247,0.05)', border: '1px solid rgba(0,255,247,0.2)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold" style={{ color: '#00fff7' }}>🔮 赛博水墨风格</span>
-                    </div>
-                    <div className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                      <p className="mb-2">融合东方水墨美学 × 赛博朋克霓虹</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(0,255,247,0.1)' }}>
-                          <div style={{ color: '#00fff7', fontSize: '11px', fontWeight: '600' }}>水墨晕染</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>标题墨迹扩散入场</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(255,45,85,0.1)' }}>
-                          <div style={{ color: '#ff2d55', fontSize: '11px', fontWeight: '600' }}>毛笔描边</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>卡片逐笔勾勒边框</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(255,215,0,0.1)' }}>
-                          <div style={{ color: '#ffd700', fontSize: '11px', fontWeight: '600' }}>霓虹粒子</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>彩色粒子飘散</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(0,255,247,0.1)' }}>
-                          <div style={{ color: '#00fff7', fontSize: '11px', fontWeight: '600' }}>全息收尾</div>
-                          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px' }}>水印扫描过场</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* ====== 禅意极简选项 ====== */}
-                {mainStyle === 'zen-minimal' && (
-                  <div className="mt-4 p-4 rounded-xl" style={{ background: '#FAFAF6', border: '1px solid #E8E5DF' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-bold" style={{ color: '#2c2c2c' }}>🍃 禅意极简风格</span>
-                    </div>
-                    <div className="text-xs leading-relaxed" style={{ color: '#6B6860' }}>
-                      <p className="mb-2">东方禅宗美学 × 极简主义，冥想式体验</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(44,44,44,0.05)' }}>
-                          <div style={{ color: '#2c2c2c', fontSize: '11px', fontWeight: '600' }}>墨滴淡入</div>
-                          <div style={{ color: '#9b9b9b', fontSize: '10px' }}>极缓上浮如墨入水</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(44,44,44,0.05)' }}>
-                          <div style={{ color: '#2c2c2c', fontSize: '11px', fontWeight: '600' }}>单线书写</div>
-                          <div style={{ color: '#9b9b9b', fontSize: '10px' }}>逐笔描绘卡片边框</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(44,44,44,0.05)' }}>
-                          <div style={{ color: '#2c2c2c', fontSize: '11px', fontWeight: '600' }}>呼吸脉动</div>
-                          <div style={{ color: '#9b9b9b', fontSize: '10px' }}>内容若隐若现</div>
-                        </div>
-                        <div className="p-2 rounded-lg" style={{ background: 'rgba(44,44,44,0.05)' }}>
-                          <div style={{ color: '#2c2c2c', fontSize: '11px', fontWeight: '600' }}>涟漪消散</div>
-                          <div style={{ color: '#9b9b9b', fontSize: '10px' }}>如水波纹扩散消失</div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )}
 

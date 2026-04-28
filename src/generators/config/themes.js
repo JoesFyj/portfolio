@@ -1,5 +1,5 @@
 /**
- * 主题配置 - 统一的6套主题配置
+ * 主题配置 - 统一的3套主题配置
  */
 
 export const THEMES = {
@@ -58,54 +58,6 @@ export const THEMES = {
     shapeColor: '#a855f7',
     particleColors: ['#a855f7', '#06b6d4', '#ffffff'],
     effects: ['waveReveal', 'titleSlide', 'cardFade'],
-  },
-
-  // ============================================================
-  // 赛博水墨 ⭐NEW
-  // ============================================================
-  'cyber-ink': {
-    id: 'cyber-ink',
-    name: '赛博水墨',
-    icon: '🔮',
-    description: '水墨 × 霓虹 · 数字文人气质',
-    bg: ['#0a0a0f', '#12121f', '#1a1a2e'],
-    accent: '#00fff7',
-    secondary: '#ff2d55',
-    gold: '#ffd700',
-    cardBg: 'rgba(0,255,247,0.05)',
-    cardBorder: 'rgba(0,255,247,0.3)',
-    cardText: '#ffffff',
-    shapeColor: '#00fff7',
-    particleColors: ['#00fff7', '#ff2d55', '#ffd700'],
-    effects: ['inkSpread', 'neonSweep', 'holoScan'],
-    // 赛博水墨特效
-    brushTexture: true,
-    scanLines: true,
-    hologramScan: true,
-  },
-
-  // ============================================================
-  // 禅意极简 ⭐NEW
-  // ============================================================
-  'zen-minimal': {
-    id: 'zen-minimal',
-    name: '禅意极简',
-    icon: '🍃',
-    description: '禅宗 × 极简 · 冥想式体验',
-    bg: ['#ffffff', '#fafaf8', '#f5f5f0'],
-    accent: '#2c2c2c',
-    secondary: '#9b9b9b',
-    white: '#ffffff',
-    cardBg: 'rgba(0,0,0,0.02)',
-    cardBorder: 'rgba(44,44,44,0.15)',
-    cardText: '#2c2c2c',
-    shapeColor: '#2c2c2c',
-    particleColors: ['#2c2c2c'],
-    effects: ['inkDrop', 'singleLine', 'breathing', 'rippleFade'],
-    // 禅意极简特效
-    singleLine: true,
-    breathingEffect: true,
-    largeWhiteSpace: true,
   },
 }
 
