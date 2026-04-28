@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Hub from './pages/Hub'
 import HubOps from './pages/HubOps'
 import PageGenerator from './pages/PageGenerator'
+import VideoGenPage from './pages/VideoGenPage'
 import AdminDashboard from './components/AdminDashboard'
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
           <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
           <Route path="/gen" element={<PageGenerator />} />
+          <Route path="/vgen" element={<VideoGenPage />} />
         </Routes>
         {showAdmin && (
           <AdminDashboard
