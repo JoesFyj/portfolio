@@ -1,4 +1,5 @@
 {
+  "projectName": "portfolio",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
