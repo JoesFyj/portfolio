@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Nav from './components/Nav'
 import DynamicBg from './components/DynamicBg'
-import Home from './pages/Home'
-import Hub from './pages/Hub'
-import HubOps from './pages/HubOps'
+import HomeNew from './pages/HomeNew'
+import Works from './pages/Works'
+import Journey from './pages/Journey'
 import PageGenerator from './pages/PageGenerator'
 import VideoGenPage from './pages/VideoGenPage'
-import AdminDashboard from './components/AdminDashboard'
+import AdminDashboardNew from './components/AdminDashboardNew'
+
+// Legacy pages (kept for backward compatibility, accessible via direct URL)
+import Hub from './pages/Hub'
+import HubOps from './pages/HubOps'
 
 export default function App() {
   const [lang, setLang] = useState('zh')
@@ -42,7 +46,7 @@ export default function App() {
     } catch (e) {}
   }
 
-  const bg = theme === 'dark' ? '#1F1F1F' : '#FAF9F6'
+  const bg = theme === 'dark' ? '#0D1117' : '#FAF9F6'
 
   return (
     <div className="min-h-screen" style={{ background: bg }}>
@@ -56,15 +60,18 @@ export default function App() {
           onAdminClick={() => setShowAdmin(true)}
         />
         <Routes>
-          <Route path="/" element={<Home lang={lang} theme={theme} />} />
-          <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
-          <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
+          <Route path="/" element={<HomeNew lang={lang} theme={theme} />} />
+          <Route path="/works" element={<Works lang={lang} theme={theme} />} />
+          <Route path="/journey" element={<Journey lang={lang} theme={theme} />} />
+          {/* Tools - keep existing */}
           <Route path="/gen" element={<PageGenerator />} />
           <Route path="/vgen" element={<VideoGenPage />} />
+          {/* Legacy routes */}
+          <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
+          <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
         </Routes>
         {showAdmin && (
-          <AdminDashboard
-            lang={lang}
+          <AdminDashboardNew
             onClose={() => setShowAdmin(false)}
           />
         )}
