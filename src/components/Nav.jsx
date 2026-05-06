@@ -22,11 +22,12 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
   }
 
   const links = [
-    { to: '/',        label: isZh ? '首页' : 'Home' },
-    { to: '/works',   label: isZh ? '作品集' : 'Works' },
-    { to: '/journey', label: isZh ? '心路历程' : 'Journey' },
-    { to: '/gen',     label: isZh ? '排版工具' : 'Formatter' },
-    { to: '/vgen',    label: isZh ? '视频生成' : 'Video Gen' },
+    { to: '/',           label: isZh ? '首页' : 'Home' },
+    { to: '/works',      label: isZh ? '作品集' : 'Works' },
+    { to: '/journey',    label: isZh ? '心路历程' : 'Journey' },
+    { to: '/content-ops', label: isZh ? '内容运营' : 'Content Ops' },
+    { to: '/gen',        label: isZh ? '排版工具' : 'Formatter' },
+    { to: '/vgen',       label: isZh ? '视频生成' : 'Video Gen' },
   ]
 
   return (

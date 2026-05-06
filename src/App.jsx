@@ -7,6 +7,7 @@ import Works from './pages/Works'
 import Journey from './pages/Journey'
 import PageGenerator from './pages/PageGenerator'
 import VideoGenPage from './pages/VideoGenPage'
+import ContentOps from './pages/ContentOps'
 import AdminDashboardNew from './components/AdminDashboardNew'
 
 // Legacy pages (kept for backward compatibility, accessible via direct URL)
@@ -66,6 +67,7 @@ export default function App() {
           {/* Tools - keep existing */}
           <Route path="/gen" element={<PageGenerator />} />
           <Route path="/vgen" element={<VideoGenPage />} />
+          <Route path="/content-ops" element={<ContentOps theme={theme} />} />
           {/* Legacy routes */}
           <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
           <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />

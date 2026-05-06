@@ -1,6 +1,33 @@
 -- ============================================
--- 小福分享舍 - Supabase 数据库建表脚本
+-- 心路历程统一记录表 (三模块合一)
 -- ============================================
+CREATE TABLE IF NOT EXISTS journey_records (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  module TEXT NOT NULL CHECK (module IN ('exercise', 'reading', 'social')),
+  title TEXT NOT NULL,                      -- 标题（跑完主题/书名/复盘标题）
+  cover_images TEXT[] DEFAULT '{}',         -- 封面图片URL数组
+  content TEXT NOT NULL,                     -- 正文/感受
+  record_date DATE NOT NULL,                 -- 记录日期
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE journey_records ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read journey_records" ON journey_records FOR SELECT USING (true);
+CREATE POLICY "Auth write journey_records" ON journey_records FOR ALL USING (auth.role() = 'authenticated');
+CREATE TRIGGER journey_records_updated_at BEFORE UPDATE ON journey_records FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_journey_records_module ON journey_records(module);
+CREATE INDEX IF NOT EXISTS idx_journey_records_date ON journey_records(record_date DESC);
+
+-- Storage bucket for journey images
+INSERT INTO storage.buckets (id, name, public) VALUES ('journey-images', 'journey-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================
+-- 小福分享舍 - Supabase 数据库建表脚本
+-- ====================================================
 
 -- 1. 作品表
 CREATE TABLE IF NOT EXISTS projects (
@@ -147,3 +174,93 @@ CREATE POLICY "Auth write fitness" ON journey_fitness FOR ALL USING (auth.role()
 CREATE POLICY "Auth write milestones" ON journey_milestones FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write media" ON journey_media FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write config" ON site_config FOR ALL USING (auth.role() = 'authenticated');
+
+-- ============================================
+-- 内容运营系统 - 多Agent流水线数据表
+-- ============================================
+
+-- 1. 选题库
+CREATE TABLE IF NOT EXISTS topics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,                   -- 选题标题
+  angle TEXT,                            -- 选题角度
+  source TEXT DEFAULT 'manual',          -- 来源: manual/hot/ai
+  heat INT DEFAULT 0,                    -- 热度值
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'done')),
+  reason TEXT,                           -- 推荐理由
+  tags TEXT[] DEFAULT '{}',              -- 标签
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. 文案库
+CREATE TABLE IF NOT EXISTS scripts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  topic_id UUID REFERENCES topics(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,                   -- 文案标题
+  content TEXT NOT NULL,                 -- 正文
+  score NUMERIC(3,1),                    -- 评审评分 0-10
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'reviewing', 'approved', 'rejected', 'published')),
+  feedback TEXT,                         -- 评审反馈
+  tags TEXT[] DEFAULT '{}',              -- 关键词标签
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. 发布记录
+CREATE TABLE IF NOT EXISTS publications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  script_id UUID REFERENCES scripts(id) ON DELETE SET NULL,
+  platform TEXT NOT NULL CHECK (platform IN ('wechat', 'douyin', 'xiaohongshu', 'twitter')),
+  url TEXT,                              -- 发布链接
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'published', 'failed')),
+  error_log TEXT,                        -- 错误日志
+  stats JSONB DEFAULT '{}',              -- 数据: {views, likes, shares, comments}
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. 运营复盘
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  publication_id UUID REFERENCES publications(id) ON DELETE CASCADE,
+  script_id UUID REFERENCES scripts(id) ON DELETE SET NULL,
+  overall_score NUMERIC(3,1),            -- 综合评分
+  hook_score NUMERIC(3,1),               -- 开头钩子
+  structure_score NUMERIC(3,1),          -- 结构
+  data_score NUMERIC(3,1),               -- 数据硬度
+  fluff_score NUMERIC(3,1),              -- 空话排查
+  retention_score NUMERIC(3,1),          -- 留存
+  analysis TEXT,                         -- 分析总结
+  next_plan TEXT,                        -- 下次计划
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 索引
+CREATE INDEX IF NOT EXISTS idx_topics_status ON topics(status);
+CREATE INDEX IF NOT EXISTS idx_topics_priority ON topics(priority);
+CREATE INDEX IF NOT EXISTS idx_scripts_status ON scripts(status);
+CREATE INDEX IF NOT EXISTS idx_scripts_score ON scripts(score);
+CREATE INDEX IF NOT EXISTS idx_publications_platform ON publications(platform);
+CREATE INDEX IF NOT EXISTS idx_publications_published_at ON publications(published_at DESC);
+
+-- 触发器
+CREATE TRIGGER topics_updated_at BEFORE UPDATE ON topics FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- RLS
+ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE scripts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE publications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read topics" ON topics FOR SELECT USING (true);
+CREATE POLICY "Public read scripts" ON scripts FOR SELECT USING (true);
+CREATE POLICY "Public read publications" ON publications FOR SELECT USING (true);
+CREATE POLICY "Public read reviews" ON reviews FOR SELECT USING (true);
+
+CREATE POLICY "Auth write topics" ON topics FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write scripts" ON scripts FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write publications" ON publications FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write reviews" ON reviews FOR ALL USING (auth.role() = 'authenticated');
