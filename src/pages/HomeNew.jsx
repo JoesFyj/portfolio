@@ -174,21 +174,90 @@ const WORKS_DATA = [
   },
 ]
 
+// ==================== 读书数据（支持心得 + 文章链接）====================
 const BOOKS_DATA = {
-  current: { name: '纳瓦尔宝典', progress: 68, cover: '📚' },
+  current: {
+    name: '纳瓦尔宝典',
+    progress: 68,
+    cover: '📚',
+    summary: '财富是睡觉时也能赚钱的资产，代码和媒体是普通人的杠杆。',
+    articleUrl: '/reading/naval-almanac',
+  },
   finished: [
-    { name: '穷查理宝典', note: '多元思维模型', cover: '📖' },
-    { name: '原则', note: '系统化决策', cover: '📖' },
-    { name: '黑天鹅', note: '不确定性思维', cover: '📖' },
+    {
+      name: '穷查理宝典',
+      summary: '多元思维模型是理解世界的工具箱，掌握80-90个重要模型就能解决大部分问题。',
+      note: '逆向思维、复利效应、能力圈边界',
+      cover: '📖',
+      articleUrl: '/reading/poor-charlies-almanack',
+      readAt: '2026-03-15',
+    },
+    {
+      name: '原则',
+      summary: '极度透明 + 极度求真 = 高效决策。把决策过程系统化，避免重复犯错。',
+      note: '痛苦+反思=进步，可信度加权决策',
+      cover: '📖',
+      articleUrl: '/reading/principles',
+      readAt: '2026-02-20',
+    },
+    {
+      name: '黑天鹅',
+      summary: '世界由极端、未知、小概率事件主导。不要预测，要构建抗脆弱性。',
+      note: '极端斯坦、非线性、杠铃策略',
+      cover: '📖',
+      articleUrl: '/reading/black-swan',
+      readAt: '2026-01-10',
+    },
   ],
   total: 12,
 }
 
+// ==================== 跑步数据（支持单次记录 + 轨迹 + 文章链接）====================
 const EXERCISE_DATA = {
   streak: 30,
   yearDistance: 200,
   weekDistance: 15,
   motto: '不是自律，是习惯',
+  // 轨迹地图数据（后续接入真实地图）
+  trajectory: {
+    center: [34.26, 108.93], // 西安
+    zoom: 8,
+    path: [], // GPS 轨迹点数组
+    image: 'https://placehold.co/800x400/2D6A4F/ffffff?text=Running+Trajectory+Map',
+  },
+  // 单次跑步记录
+  records: [
+    {
+      id: 1,
+      date: '2026-05-07',
+      distance: 5.2,
+      duration: '32:15',
+      pace: '6\'12"',
+      image: 'https://placehold.co/400x300/40916C/ffffff?text=Morning+Run',
+      note: '晨跑，空气很好，听了《纳瓦尔宝典》的有声书。',
+      articleUrl: '/exercise/morning-run-0507',
+    },
+    {
+      id: 2,
+      date: '2026-05-05',
+      distance: 8.0,
+      duration: '52:30',
+      pace: '6\'33"',
+      image: 'https://placehold.co/400x300/52B788/ffffff?text=Evening+Run',
+      note: '傍晚跑，状态一般，但坚持下来了。跑步就是和自己的对话。',
+      articleUrl: '/exercise/evening-run-0505',
+    },
+    {
+      id: 3,
+      date: '2026-05-02',
+      distance: 10.0,
+      duration: '65:00',
+      pace: '6\'30"',
+      image: 'https://placehold.co/400x300/74C69D/ffffff?text=Weekend+Long+Run',
+      note: '周末长距离，突破10公里。最后一公里冲刺，感觉还能再跑。',
+      articleUrl: '/exercise/weekend-longrun-0502',
+    },
+  ],
 }
 
 export default function HomeNew({ theme }) {
@@ -385,7 +454,7 @@ export default function HomeNew({ theme }) {
                 读书 · 以书为粮
               </h2>
               <p className="text-sm" style={{ color: muted }}>
-                今年已读 {BOOKS_DATA.total} 本
+                今年已读 {BOOKS_DATA.total} 本 · 读有所思，思有所得
               </p>
             </div>
             <Link
@@ -405,13 +474,16 @@ export default function HomeNew({ theme }) {
               border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
             }}
           >
-            <div className="flex items-center gap-4">
-              <span className="text-4xl">{BOOKS_DATA.current.cover}</span>
+            <div className="flex items-start gap-4">
+              <span className="text-5xl">{BOOKS_DATA.current.cover}</span>
               <div className="flex-1">
-                <div className="font-semibold mb-1" style={{ color: text }}>
+                <div className="font-semibold text-lg mb-1" style={{ color: text }}>
                   当前在读：{BOOKS_DATA.current.name}
                 </div>
-                <div className="flex items-center gap-3">
+                <p className="text-sm mb-3 leading-relaxed" style={{ color: muted }}>
+                  {BOOKS_DATA.current.summary}
+                </p>
+                <div className="flex items-center gap-3 mb-3">
                   <div
                     className="flex-1 h-2 rounded-full"
                     style={{ background: isDark ? '#21262D' : '#E8E5DF' }}
@@ -425,25 +497,45 @@ export default function HomeNew({ theme }) {
                     {BOOKS_DATA.current.progress}%
                   </span>
                 </div>
+                <Link
+                  to={BOOKS_DATA.current.articleUrl}
+                  className="inline-flex items-center gap-1 text-sm font-medium"
+                  style={{ color: '#2D6A4F' }}
+                >
+                  阅读笔记 <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
           </div>
 
-          {/* 最近读完 */}
+          {/* 最近读完 - 卡片展示心得 */}
           <h3 className="font-medium mb-4" style={{ color: muted }}>最近读完</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {BOOKS_DATA.finished.map(book => (
               <div
                 key={book.name}
-                className="rounded-xl p-5 transition-all hover:shadow-md"
+                className="rounded-xl p-5 transition-all hover:shadow-md group"
                 style={{ background: cardBg, border: `1px solid ${border}` }}
               >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{book.cover}</span>
-                  <div>
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="text-3xl">{book.cover}</span>
+                  <div className="flex-1">
                     <div className="font-medium mb-1" style={{ color: text }}>{book.name}</div>
-                    <div className="text-xs" style={{ color: muted }}>{book.note}</div>
+                    <div className="text-xs mb-2" style={{ color: muted }}>{book.note}</div>
                   </div>
+                </div>
+                <p className="text-sm leading-relaxed mb-3" style={{ color: muted }}>
+                  {book.summary}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: muted }}>{book.readAt}</span>
+                  <Link
+                    to={book.articleUrl}
+                    className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: '#2D6A4F' }}
+                  >
+                    查看笔记 <ArrowRight size={12} />
+                  </Link>
                 </div>
               </div>
             ))}
@@ -460,7 +552,7 @@ export default function HomeNew({ theme }) {
                 锻炼 · 以路为行
               </h2>
               <p className="text-sm" style={{ color: muted }}>
-                {EXERCISE_DATA.motto}
+                {EXERCISE_DATA.motto} · 每一步都算数
               </p>
             </div>
             <Link
@@ -491,24 +583,82 @@ export default function HomeNew({ theme }) {
             ))}
           </div>
 
-          {/* 跑步轨迹可视化占位 */}
-          <div
-            className="rounded-xl p-8 text-center"
-            style={{
-              background: isDark ? '#0D1117' : '#FFFFFF',
-              border: `1px solid ${border}`,
-            }}
-          >
-            <div className="text-4xl mb-4">🗺️</div>
-            <div className="font-medium mb-2" style={{ color: text }}>跑步轨迹地图</div>
-            <div className="text-sm" style={{ color: muted }}>
-              从甘肃天水到陕西西安，每一步都是向前的路
-            </div>
+          {/* 轨迹地图 + 跑步记录 左右布局 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左侧：轨迹地图 */}
             <div
-              className="mt-4 inline-block px-4 py-2 rounded-lg text-xs"
-              style={{ background: isDark ? '#21262D' : '#F4F2EE', color: muted }}
+              className="rounded-xl overflow-hidden"
+              style={{ background: cardBg, border: `1px solid ${border}` }}
             >
-              📍 兰州 → 天水 → 西安（可视化开发中）
+              <div className="relative aspect-[4/3]">
+                <img
+                  src={EXERCISE_DATA.trajectory.image}
+                  alt="跑步轨迹"
+                  className="w-full h-full object-cover"
+                />
+                <div 
+                  className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%)' }}
+                />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="text-white font-medium mb-1">跑步轨迹全貌</div>
+                  <div className="text-white/70 text-sm">
+                    📍 兰州 → 天水 → 西安
+                  </div>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm" style={{ color: muted }}>
+                  从甘肃深山出发，一路向东。每一步都是向前的路，每一公里都是自由的积累。
+                </p>
+              </div>
+            </div>
+
+            {/* 右侧：最近跑步记录 */}
+            <div className="space-y-4">
+              <h3 className="font-medium" style={{ color: muted }}>最近跑步</h3>
+              {EXERCISE_DATA.records.map(record => (
+                <div
+                  key={record.id}
+                  className="rounded-xl overflow-hidden transition-all hover:shadow-md group"
+                  style={{ background: cardBg, border: `1px solid ${border}` }}
+                >
+                  <div className="flex">
+                    {/* 图片 */}
+                    <div className="w-32 h-24 flex-shrink-0">
+                      <img
+                        src={record.image}
+                        alt={`跑步 ${record.date}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {/* 内容 */}
+                    <div className="flex-1 p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs" style={{ color: muted }}>{record.date}</span>
+                        <span className="text-xs font-medium" style={{ color: '#2D6A4F' }}>
+                          {record.distance}km
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed mb-2 line-clamp-2" style={{ color: text }}>
+                        {record.note}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: muted }}>
+                          {record.duration} · 配速 {record.pace}
+                        </span>
+                        <Link
+                          to={record.articleUrl}
+                          className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: '#2D6A4F' }}
+                        >
+                          查看记录 <ArrowRight size={12} />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
