@@ -1,31 +1,40 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { getConfig } from '../config/siteConfig'
 
-// 硬编码数据（后续接后台）
-const SOCIAL_DATA = [
-  { name: '抖音', icon: '📱', fans: '1200', works: '45', color: '#000000' },
-  { name: '视频号', icon: '🎬', fans: '800', works: '32', color: '#07C160' },
-  { name: '快手', icon: '🎯', fans: '600', works: '28', color: '#FF4906' },
-  { name: '公众号', icon: '📝', fans: '350', works: '15', color: '#2D6A4F' },
-]
+// 从配置中心获取数据
+function useSiteConfig() {
+  const [config, setConfig] = useState(() => getConfig())
+  
+  useEffect(() => {
+    const handleStorage = () => setConfig(getConfig())
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+  
+  return config
+}
 
 // Hero 区作品轮播展示（右侧大图）
-function HeroWorksShowcase({ theme }) {
+function HeroWorksShowcase({ works, theme }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const isDark = theme === 'dark'
   
-  // 所有作品的图片合并轮播
-  const allImages = WORKS_DATA.flatMap(work => 
+  const enabledWorks = works.filter(w => w.enabled !== false)
+  const allImages = enabledWorks.flatMap(work => 
     work.images.map(img => ({ ...work, image: img }))
   )
   
   useEffect(() => {
+    if (allImages.length === 0) return
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % allImages.length)
     }, 4000)
     return () => clearInterval(timer)
   }, [allImages.length])
+
+  if (allImages.length === 0) return null
 
   const current = allImages[currentIndex]
   const border = isDark ? '#30363D' : '#E8E5DF'
@@ -42,7 +51,6 @@ function HeroWorksShowcase({ theme }) {
           : '0 25px 50px -12px rgba(0,0,0,0.15)',
       }}
     >
-      {/* 图片区域 */}
       <div className="relative aspect-[16/10] overflow-hidden">
         {allImages.map((item, idx) => (
           <img
@@ -53,16 +61,10 @@ function HeroWorksShowcase({ theme }) {
             style={{ opacity: idx === currentIndex ? 1 : 0 }}
           />
         ))}
-        
-        {/* 渐变遮罩 */}
         <div 
           className="absolute inset-0"
-          style={{ 
-            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)',
-          }}
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }}
         />
-        
-        {/* 作品信息 */}
         <div className="absolute bottom-0 left-0 right-0 p-6">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{current.icon}</span>
@@ -78,8 +80,6 @@ function HeroWorksShowcase({ theme }) {
           </Link>
         </div>
       </div>
-      
-      {/* 指示器 */}
       <div className="absolute top-4 right-4 flex gap-1.5">
         {allImages.map((_, idx) => (
           <button
@@ -102,40 +102,31 @@ function WorkCarousel({ images, theme }) {
   const [current, setCurrent] = useState(0)
   const isDark = theme === 'dark'
   
+  if (!images || images.length === 0) return null
+  
   const next = () => setCurrent((c) => (c + 1) % images.length)
   const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length)
 
   return (
     <div className="relative w-full aspect-video rounded-lg overflow-hidden mb-4 group">
-      <img
-        src={images[current]}
-        alt={`截图 ${current + 1}`}
-        className="w-full h-full object-cover"
-      />
+      <img src={images[current]} alt={`截图 ${current + 1}`} className="w-full h-full object-cover" />
       {images.length > 1 && (
         <>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); prev() }}
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); prev() }}
             className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
-          >
+            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
             <ChevronLeft size={18} />
           </button>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); next() }}
+          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); next() }}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
-          >
+            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}>
             <ChevronRight size={18} />
           </button>
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i) }}
+              <button key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i) }}
                 className="w-1.5 h-1.5 rounded-full transition-all"
-                style={{ background: i === current ? '#fff' : 'rgba(255,255,255,0.5)' }}
-              />
+                style={{ background: i === current ? '#fff' : 'rgba(255,255,255,0.5)' }} />
             ))}
           </div>
         </>
@@ -144,622 +135,234 @@ function WorkCarousel({ images, theme }) {
   )
 }
 
-const WORKS_DATA = [
-  {
-    id: 1,
-    name: '多Agent内容创作运营系统',
-    desc: '7个AI Agent 24小时自动化运营，选题→文案→发布→复盘全链路',
-    icon: '🤖',
-    color: '#6366F1',
-    url: '/works',
-    images: [
-      'https://placehold.co/600x340/6366F1/ffffff?text=Agent+Dashboard',
-      'https://placehold.co/600x340/4F46E5/ffffff?text=Content+Flow',
-      'https://placehold.co/600x340/4338CA/ffffff?text=Analytics',
-    ],
-  },
-  {
-    id: 2,
-    name: 'VideoGenerator V2',
-    desc: '动画视频自动生成引擎，5套风格预设，一键生成抖音口播视频',
-    icon: '🎬',
-    color: '#2D6A4F',
-    url: 'https://40cb5522c78940d6856379baab1876af.prod.enter.pro/',
-    external: true,
-    images: [
-      'https://placehold.co/600x340/2D6A4F/ffffff?text=Video+Editor',
-      'https://placehold.co/600x340/1B4332/ffffff?text=Style+Presets',
-      'https://placehold.co/600x340/40916C/ffffff?text=Export+Panel',
-    ],
-  },
-]
-
-// ==================== 读书数据（全貌 + 详细记录 + 心得 + 文章链接）====================
-const BOOKS_DATA = {
-  // 阅读全貌统计
-  overview: {
-    total: 12,                    // 今年已读
-    target: 24,                   // 年度目标
-    pages: 3680,                  // 累计页数
-    hours: 156,                   // 累计阅读时长（小时）
-    streak: 45,                   // 连续阅读天数
-    image: 'https://placehold.co/800x400/6366F1/ffffff?text=Reading+Journey+2026',
-  },
-  // 当前在读
-  current: {
-    name: '纳瓦尔宝典',
-    progress: 68,
-    cover: '📚',
-    summary: '财富是睡觉时也能赚钱的资产，代码和媒体是普通人的杠杆。',
-    articleUrl: '/reading/naval-almanac',
-  },
-  // 详细阅读记录（按时间倒序）
-  records: [
-    {
-      id: 1,
-      name: '穷查理宝典',
-      cover: '📖',
-      summary: '多元思维模型是理解世界的工具箱，掌握80-90个重要模型就能解决大部分问题。',
-      note: '逆向思维、复利效应、能力圈边界',
-      articleUrl: '/reading/poor-charlies-almanack',
-      readAt: '2026-03-15',
-      rating: 5,                  // 评分 1-5
-      pages: 580,
-    },
-    {
-      id: 2,
-      name: '原则',
-      cover: '📖',
-      summary: '极度透明 + 极度求真 = 高效决策。把决策过程系统化，避免重复犯错。',
-      note: '痛苦+反思=进步，可信度加权决策',
-      articleUrl: '/reading/principles',
-      readAt: '2026-02-20',
-      rating: 5,
-      pages: 592,
-    },
-    {
-      id: 3,
-      name: '黑天鹅',
-      cover: '📖',
-      summary: '世界由极端、未知、小概率事件主导。不要预测，要构建抗脆弱性。',
-      note: '极端斯坦、非线性、杠铃策略',
-      articleUrl: '/reading/black-swan',
-      readAt: '2026-01-10',
-      rating: 4,
-      pages: 450,
-    },
-    {
-      id: 4,
-      name: '思考，快与慢',
-      cover: '📖',
-      summary: '系统1（直觉）和系统2（理性）的博弈，理解决策背后的认知机制。',
-      note: '认知偏差、锚定效应、损失厌恶',
-      articleUrl: '/reading/thinking-fast-slow',
-      readAt: '2025-12-20',
-      rating: 4,
-      pages: 512,
-    },
-  ],
-}
-
-// ==================== 跑步数据（支持单次记录 + 轨迹 + 文章链接）====================
-const EXERCISE_DATA = {
-  streak: 30,
-  yearDistance: 200,
-  weekDistance: 15,
-  motto: '不是自律，是习惯',
-  // 轨迹地图数据（后续接入真实地图）
-  trajectory: {
-    center: [34.26, 108.93], // 西安
-    zoom: 8,
-    path: [], // GPS 轨迹点数组
-    image: 'https://placehold.co/800x400/2D6A4F/ffffff?text=Running+Trajectory+Map',
-  },
-  // 单次跑步记录
-  records: [
-    {
-      id: 1,
-      date: '2026-05-07',
-      distance: 5.2,
-      duration: '32:15',
-      pace: '6\'12"',
-      image: 'https://placehold.co/400x300/40916C/ffffff?text=Morning+Run',
-      note: '晨跑，空气很好，听了《纳瓦尔宝典》的有声书。',
-      articleUrl: '/exercise/morning-run-0507',
-    },
-    {
-      id: 2,
-      date: '2026-05-05',
-      distance: 8.0,
-      duration: '52:30',
-      pace: '6\'33"',
-      image: 'https://placehold.co/400x300/52B788/ffffff?text=Evening+Run',
-      note: '傍晚跑，状态一般，但坚持下来了。跑步就是和自己的对话。',
-      articleUrl: '/exercise/evening-run-0505',
-    },
-    {
-      id: 3,
-      date: '2026-05-02',
-      distance: 10.0,
-      duration: '65:00',
-      pace: '6\'30"',
-      image: 'https://placehold.co/400x300/74C69D/ffffff?text=Weekend+Long+Run',
-      note: '周末长距离，突破10公里。最后一公里冲刺，感觉还能再跑。',
-      articleUrl: '/exercise/weekend-longrun-0502',
-    },
-  ],
-}
-
 export default function HomeNew({ theme }) {
   const isDark = theme === 'dark'
-
+  const config = useSiteConfig()
+  
   const bg = isDark ? '#0D1117' : '#FAF9F6'
   const text = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted = isDark ? '#8B949E' : '#6B6860'
   const border = isDark ? '#30363D' : '#E8E5DF'
   const cardBg = isDark ? '#161B22' : '#FFFFFF'
+  const accent = config.theme?.primaryColor || '#2D6A4F'
+
+  // 过滤启用的数据
+  const heroConfig = config.hero || {}
+  const socialConfig = config.social || {}
+  const worksConfig = config.works || {}
+  const readingConfig = config.reading || {}
+  const exerciseConfig = config.exercise || {}
+  const aboutConfig = config.about || {}
+
+  const enabledWorks = (worksConfig.items || []).filter(w => w.enabled !== false)
+  const enabledPlatforms = (socialConfig.platforms || []).filter(p => p.enabled !== false)
+  const enabledBooks = (readingConfig.records || []).filter(b => b.enabled !== false)
+  const enabledRuns = (exerciseConfig.records || []).filter(r => r.enabled !== false)
 
   return (
     <div className="min-h-screen" style={{ background: bg }}>
       
       {/* ===== Hero - 左右布局 ===== */}
-      <section className="flex items-center" style={{ minHeight: '90dvh', paddingTop: '4rem' }}>
-        <div className="w-full max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
-            {/* 左侧：头像 + 介绍 */}
-            <div>
-              {/* 标签 */}
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
-                style={{
-                  background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
-                  border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
-                }}
-              >
-                <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
-                  从甘肃深山到职业自由的普通人
-                </span>
-              </div>
-
-              {/* 头像 */}
-              <div className="mb-6">
-                <div
-                  className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl"
+      {heroConfig.enabled !== false && (
+        <section className="flex items-center" style={{ minHeight: '90dvh', paddingTop: '4rem' }}>
+          <div className="w-full max-w-6xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
                   style={{
-                    background: isDark ? '#21262D' : '#F0EFEA',
-                    border: `3px solid ${isDark ? '#30363D' : '#E8E5DF'}`,
-                  }}
-                >
-                  🧑‍💻
+                    background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
+                    border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
+                  }}>
+                  <span className="text-sm font-medium" style={{ color: accent }}>{heroConfig.tag}</span>
+                </div>
+                <div className="mb-6">
+                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl"
+                    style={{ background: isDark ? '#21262D' : '#F0EFEA', border: `3px solid ${border}` }}>
+                    {heroConfig.avatar}
+                  </div>
+                </div>
+                <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4" style={{ color: text }}>
+                  {heroConfig.title}
+                </h1>
+                <p className="text-base md:text-lg mb-6 max-w-lg leading-relaxed" style={{ color: muted }}>
+                  {heroConfig.subtitle}
+                  <br />
+                  <span style={{ color: accent }}>{heroConfig.motto}</span>
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {(heroConfig.buttons || []).map((btn, idx) => (
+                    btn.primary ? (
+                      <Link key={idx} to={btn.link}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-lg"
+                        style={{ background: accent, color: '#FFFFFF' }}>
+                        {btn.icon === 'Zap' && <Zap size={16} />}
+                        {btn.icon === 'BookOpen' && <BookOpen size={16} />}
+                        {btn.icon === 'Activity' && <Activity size={16} />}
+                        {btn.label}
+                      </Link>
+                    ) : (
+                      <a key={idx} href={btn.link}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all"
+                        style={{ borderColor: border, color: muted }}>
+                        {btn.icon === 'Zap' && <Zap size={16} />}
+                        {btn.icon === 'BookOpen' && <BookOpen size={16} />}
+                        {btn.icon === 'Activity' && <Activity size={16} />}
+                        {btn.label}
+                      </a>
+                    )
+                  ))}
                 </div>
               </div>
-
-              {/* 主标题 */}
-              <h1
-                className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4"
-                style={{ color: text }}
-              >
-                你好，我是小福
-              </h1>
-
-              {/* 一句话介绍 */}
-              <p
-                className="text-base md:text-lg mb-6 max-w-lg leading-relaxed"
-                style={{ color: muted }}
-              >
-                一个人 + 7个AI Agent = 24小时帮你干活
-                <br />
-                <span style={{ color: '#2D6A4F' }}>少工作，多赚钱，以书为粮，以路为行</span>
-              </p>
-
-              {/* 三个入口 */}
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/works"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-lg"
-                  style={{ background: '#2D6A4F', color: '#FFFFFF' }}
-                >
-                  <Zap size={16} /> 自媒体+AI实验
-                </Link>
-                <a
-                  href="#reading"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all"
-                  style={{ borderColor: border, color: muted }}
-                >
-                  <BookOpen size={16} /> 读书
-                </a>
-                <a
-                  href="#exercise"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all"
-                  style={{ borderColor: border, color: muted }}
-                >
-                  <Activity size={16} /> 锻炼
-                </a>
-              </div>
-            </div>
-
-            {/* 右侧：作品轮播展示 */}
-            <div className="hidden lg:block">
-              <HeroWorksShowcase theme={theme} />
+              {worksConfig.showOnHero !== false && enabledWorks.length > 0 && (
+                <div className="hidden lg:block">
+                  <HeroWorksShowcase works={enabledWorks} theme={theme} />
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* ===== 自媒体+AI实验 ===== */}
-      <section className="py-20 px-6" style={{ background: isDark ? '#161B22' : '#F8F7F4' }}>
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-serif text-3xl font-bold mb-3" style={{ color: text }}>
-            自媒体+AI实验
-          </h2>
-          <p className="text-sm mb-10" style={{ color: muted }}>
-            少工作多赚钱的路径：用AI放大个人产出，一个人干出一个小团队的量
-          </p>
-
-          {/* 平台数据 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            {SOCIAL_DATA.map(platform => (
-              <div
-                key={platform.name}
-                className="rounded-xl p-5 transition-all hover:shadow-md"
-                style={{ background: cardBg, border: `1px solid ${border}` }}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">{platform.icon}</span>
-                  <span className="font-medium" style={{ color: text }}>{platform.name}</span>
+      {/* ===== 社交媒体 ===== */}
+      {socialConfig.enabled !== false && (
+        <section className="py-20 px-6" style={{ background: isDark ? '#161B22' : '#F8F7F4' }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className="font-serif text-3xl font-bold mb-3" style={{ color: text }}>{socialConfig.title}</h2>
+            <p className="text-sm mb-10" style={{ color: muted }}>{socialConfig.subtitle}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              {enabledPlatforms.map(platform => (
+                <div key={platform.name} className="rounded-xl p-5 transition-all hover:shadow-md"
+                  style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{platform.icon}</span>
+                    <span className="font-medium" style={{ color: text }}>{platform.name}</span>
+                  </div>
+                  <div className="text-2xl font-bold mb-1" style={{ color: platform.color }}>{platform.fans}</div>
+                  <div className="text-xs" style={{ color: muted }}>粉丝 · {platform.works} 作品</div>
                 </div>
-                <div className="text-2xl font-bold mb-1" style={{ color: platform.color }}>
-                  {platform.fans}
-                </div>
-                <div className="text-xs" style={{ color: muted }}>
-                  粉丝 · {platform.works} 作品
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 作品集预览 */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg" style={{ color: text }}>作品</h3>
-            <Link
-              to="/works"
-              className="text-sm font-medium flex items-center gap-1"
-              style={{ color: '#2D6A4F' }}
-            >
-              查看更多 <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {WORKS_DATA.map(work => (
-              <div
-                key={work.id}
-                className="rounded-xl p-4 transition-all hover:shadow-lg group"
-                style={{ background: cardBg, border: `1px solid ${border}` }}
-              >
-                {/* 封面轮播 */}
-                <WorkCarousel images={work.images} theme={theme} />
-
-                {/* 作品信息 */}
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">{work.icon}</span>
-                  <h4 className="font-semibold text-lg" style={{ color: text }}>
-                    {work.name}
-                  </h4>
-                </div>
-                <p className="text-sm mb-3" style={{ color: muted }}>{work.desc}</p>
-
-                {/* 按钮 */}
-                {work.external ? (
-                  <a
-                    href={work.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
-                    style={{ color: work.color }}
-                  >
-                    前往使用 <ArrowRight size={14} />
-                  </a>
-                ) : (
-                  <Link
-                    to={work.url}
-                    className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
-                    style={{ color: work.color }}
-                  >
-                    查看详情 <ArrowRight size={14} />
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== 读书 · 以书为粮 ===== */}
-      <section id="reading" className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: text }}>
-                读书 · 以书为粮
-              </h2>
-              <p className="text-sm" style={{ color: muted }}>
-                今年已读 {BOOKS_DATA.overview.total} 本 · 读有所思，思有所得
-              </p>
+              ))}
             </div>
-            <Link
-              to="/reading"
-              className="text-sm font-medium flex items-center gap-1"
-              style={{ color: '#2D6A4F' }}
-            >
-              查看全部 <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {/* 阅读全貌 + 当前在读 左右布局 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-            {/* 左侧：阅读全貌统计 */}
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ background: cardBg, border: `1px solid ${border}` }}
-            >
-              <div className="relative aspect-[16/9]">
-                <img
-                  src={BOOKS_DATA.overview.image}
-                  alt="阅读全貌"
-                  className="w-full h-full object-cover"
-                />
-                <div 
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }}
-                />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="text-white font-medium mb-2">2026 阅读之旅</div>
-                  <div className="flex items-center gap-4 text-white/80 text-sm">
-                    <span>目标 {BOOKS_DATA.overview.target} 本</span>
-                    <span>·</span>
-                    <span>已完成 {Math.round(BOOKS_DATA.overview.total / BOOKS_DATA.overview.target * 100)}%</span>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.total}</div>
-                    <div className="text-xs" style={{ color: muted }}>已读书籍</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.pages}</div>
-                    <div className="text-xs" style={{ color: muted }}>累计页数</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.hours}h</div>
-                    <div className="text-xs" style={{ color: muted }}>阅读时长</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 右侧：当前在读 */}
-            <div
-              className="rounded-xl p-6 flex flex-col justify-center"
-              style={{
-                background: isDark ? 'rgba(45,106,79,0.1)' : 'rgba(45,106,79,0.05)',
-                border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
-              }}
-            >
-              <div className="text-xs font-medium mb-4" style={{ color: '#2D6A4F' }}>当前在读</div>
-              <div className="flex items-start gap-4">
-                <span className="text-5xl">{BOOKS_DATA.current.cover}</span>
-                <div className="flex-1">
-                  <div className="font-semibold text-lg mb-2" style={{ color: text }}>
-                    {BOOKS_DATA.current.name}
-                  </div>
-                  <p className="text-sm mb-4 leading-relaxed" style={{ color: muted }}>
-                    {BOOKS_DATA.current.summary}
-                  </p>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="flex-1 h-2 rounded-full"
-                      style={{ background: isDark ? '#21262D' : '#E8E5DF' }}
-                    >
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${BOOKS_DATA.current.progress}%`, background: '#2D6A4F' }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
-                      {BOOKS_DATA.current.progress}%
-                    </span>
-                  </div>
-                  <Link
-                    to={BOOKS_DATA.current.articleUrl}
-                    className="inline-flex items-center gap-1 text-sm font-medium"
-                    style={{ color: '#2D6A4F' }}
-                  >
-                    阅读笔记 <ArrowRight size={14} />
+            {worksConfig.enabled !== false && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-lg" style={{ color: text }}>{worksConfig.title}</h3>
+                  <Link to="/works" className="text-sm font-medium flex items-center gap-1" style={{ color: accent }}>
+                    查看更多 <ArrowRight size={14} />
                   </Link>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 详细阅读记录 */}
-          <h3 className="font-medium mb-4" style={{ color: muted }}>阅读记录</h3>
-          <div className="space-y-4">
-            {BOOKS_DATA.records.map(book => (
-              <div
-                key={book.id}
-                className="rounded-xl p-5 transition-all hover:shadow-md group"
-                style={{ background: cardBg, border: `1px solid ${border}` }}
-              >
-                <div className="flex items-start gap-4">
-                  {/* 封面 */}
-                  <div className="flex-shrink-0">
-                    <div
-                      className="w-16 h-20 rounded-lg flex items-center justify-center text-3xl"
-                      style={{ background: isDark ? '#21262D' : '#F0EFEA' }}
-                    >
-                      {book.cover}
-                    </div>
-                  </div>
-                  {/* 内容 */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div>
-                        <div className="font-semibold text-lg mb-1" style={{ color: text }}>{book.name}</div>
-                        <div className="flex items-center gap-3 text-xs" style={{ color: muted }}>
-                          <span>{book.readAt}</span>
-                          <span>·</span>
-                          <span>{book.pages} 页</span>
-                          <span>·</span>
-                          <span>{'⭐'.repeat(book.rating)}</span>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {enabledWorks.slice(0, 2).map(work => (
+                    <div key={work.id} className="rounded-xl p-4 transition-all hover:shadow-lg group"
+                      style={{ background: cardBg, border: `1px solid ${border}` }}>
+                      <WorkCarousel images={work.images} theme={theme} />
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">{work.icon}</span>
+                        <h4 className="font-semibold text-lg" style={{ color: text }}>{work.name}</h4>
                       </div>
-                      <Link
-                        to={book.articleUrl}
-                        className="flex-shrink-0 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: '#2D6A4F' }}
-                      >
-                        查看笔记 <ArrowRight size={14} />
+                      <p className="text-sm mb-3" style={{ color: muted }}>{work.desc}</p>
+                      {work.external ? (
+                        <a href={work.url} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
+                          style={{ color: work.color }}>前往使用 <ArrowRight size={14} /></a>
+                      ) : (
+                        <Link to={work.url}
+                          className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
+                          style={{ color: work.color }}>查看详情 <ArrowRight size={14} /></Link>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ===== 读书 ===== */}
+      {readingConfig.enabled !== false && (
+        <section id="reading" className="py-20 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: text }}>{readingConfig.title}</h2>
+                <p className="text-sm" style={{ color: muted }}>{readingConfig.subtitle}</p>
+              </div>
+              <Link to="/reading" className="text-sm font-medium flex items-center gap-1" style={{ color: accent }}>
+                查看全部 <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+              {readingConfig.overview?.enabled !== false && (
+                <div className="rounded-xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="relative aspect-[16/9]">
+                    <img src={readingConfig.overview.image} alt="阅读全貌" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }} />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-white font-medium mb-2">2026 阅读之旅</div>
+                      <div className="flex items-center gap-4 text-white/80 text-sm">
+                        <span>目标 {readingConfig.overview.target} 本</span>
+                        <span>·</span>
+                        <span>已完成 {Math.round(readingConfig.overview.total / readingConfig.overview.target * 100)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div><div className="text-xl font-bold" style={{ color: accent }}>{readingConfig.overview.total}</div><div className="text-xs" style={{ color: muted }}>已读书籍</div></div>
+                      <div><div className="text-xl font-bold" style={{ color: accent }}>{readingConfig.overview.pages}</div><div className="text-xs" style={{ color: muted }}>累计页数</div></div>
+                      <div><div className="text-xl font-bold" style={{ color: accent }}>{readingConfig.overview.hours}h</div><div className="text-xs" style={{ color: muted }}>阅读时长</div></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {readingConfig.current?.enabled !== false && (
+                <div className="rounded-xl p-6 flex flex-col justify-center"
+                  style={{ background: isDark ? 'rgba(45,106,79,0.1)' : 'rgba(45,106,79,0.05)', border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}` }}>
+                  <div className="text-xs font-medium mb-4" style={{ color: accent }}>当前在读</div>
+                  <div className="flex items-start gap-4">
+                    <span className="text-5xl">{readingConfig.current.cover}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg mb-2" style={{ color: text }}>{readingConfig.current.name}</div>
+                      <p className="text-sm mb-4 leading-relaxed" style={{ color: muted }}>{readingConfig.current.summary}</p>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex-1 h-2 rounded-full" style={{ background: isDark ? '#21262D' : '#E8E5DF' }}>
+                          <div className="h-full rounded-full" style={{ width: `${readingConfig.current.progress}%`, background: accent }} />
+                        </div>
+                        <span className="text-sm font-medium" style={{ color: accent }}>{readingConfig.current.progress}%</span>
+                      </div>
+                      <Link to={readingConfig.current.articleUrl} className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: accent }}>
+                        阅读笔记 <ArrowRight size={14} />
                       </Link>
                     </div>
-                    <p className="text-sm leading-relaxed mb-2" style={{ color: muted }}>
-                      {book.summary}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {book.note.split('、').map(tag => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 rounded text-xs"
-                          style={{
-                            background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
-                            color: '#2D6A4F',
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== 锻炼 · 以路为行 ===== */}
-      <section id="exercise" className="py-20 px-6" style={{ background: isDark ? '#161B22' : '#F8F7F4' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: text }}>
-                锻炼 · 以路为行
-              </h2>
-              <p className="text-sm" style={{ color: muted }}>
-                {EXERCISE_DATA.motto} · 每一步都算数
-              </p>
+              )}
             </div>
-            <Link
-              to="/exercise"
-              className="text-sm font-medium flex items-center gap-1"
-              style={{ color: '#2D6A4F' }}
-            >
-              查看全部 <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {/* 核心数据 */}
-          <div className="grid grid-cols-3 gap-4 mb-10">
-            {[
-              { label: '连续打卡', value: `${EXERCISE_DATA.streak}天`, icon: '🔥' },
-              { label: '今年跑量', value: `${EXERCISE_DATA.yearDistance}km`, icon: '🏃' },
-              { label: '本周跑量', value: `${EXERCISE_DATA.weekDistance}km`, icon: '📊' },
-            ].map(stat => (
-              <div
-                key={stat.label}
-                className="rounded-xl p-5 text-center"
-                style={{ background: cardBg, border: `1px solid ${border}` }}
-              >
-                <span className="text-2xl block mb-2">{stat.icon}</span>
-                <div className="text-2xl font-bold mb-1" style={{ color: text }}>{stat.value}</div>
-                <div className="text-xs" style={{ color: muted }}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 轨迹地图 + 跑步记录 左右布局 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 左侧：轨迹地图 */}
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ background: cardBg, border: `1px solid ${border}` }}
-            >
-              <div className="relative aspect-[4/3]">
-                <img
-                  src={EXERCISE_DATA.trajectory.image}
-                  alt="跑步轨迹"
-                  className="w-full h-full object-cover"
-                />
-                <div 
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%)' }}
-                />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="text-white font-medium mb-1">跑步轨迹全貌</div>
-                  <div className="text-white/70 text-sm">
-                    📍 兰州 → 天水 → 西安
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <p className="text-sm" style={{ color: muted }}>
-                  从甘肃深山出发，一路向东。每一步都是向前的路，每一公里都是自由的积累。
-                </p>
-              </div>
-            </div>
-
-            {/* 右侧：最近跑步记录 */}
+            <h3 className="font-medium mb-4" style={{ color: muted }}>阅读记录</h3>
             <div className="space-y-4">
-              <h3 className="font-medium" style={{ color: muted }}>最近跑步</h3>
-              {EXERCISE_DATA.records.map(record => (
-                <div
-                  key={record.id}
-                  className="rounded-xl overflow-hidden transition-all hover:shadow-md group"
-                  style={{ background: cardBg, border: `1px solid ${border}` }}
-                >
-                  <div className="flex">
-                    {/* 图片 */}
-                    <div className="w-32 h-24 flex-shrink-0">
-                      <img
-                        src={record.image}
-                        alt={`跑步 ${record.date}`}
-                        className="w-full h-full object-cover"
-                      />
+              {enabledBooks.slice(0, 4).map(book => (
+                <div key={book.id} className="rounded-xl p-5 transition-all hover:shadow-md group" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-20 rounded-lg flex items-center justify-center text-3xl" style={{ background: isDark ? '#21262D' : '#F0EFEA' }}>{book.cover}</div>
                     </div>
-                    {/* 内容 */}
-                    <div className="flex-1 p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs" style={{ color: muted }}>{record.date}</span>
-                        <span className="text-xs font-medium" style={{ color: '#2D6A4F' }}>
-                          {record.distance}km
-                        </span>
-                      </div>
-                      <p className="text-sm leading-relaxed mb-2 line-clamp-2" style={{ color: text }}>
-                        {record.note}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: muted }}>
-                          {record.duration} · 配速 {record.pace}
-                        </span>
-                        <Link
-                          to={record.articleUrl}
-                          className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ color: '#2D6A4F' }}
-                        >
-                          查看记录 <ArrowRight size={12} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <div className="font-semibold text-lg mb-1" style={{ color: text }}>{book.name}</div>
+                          <div className="flex items-center gap-3 text-xs" style={{ color: muted }}>
+                            <span>{book.readAt}</span><span>·</span><span>{book.pages} 页</span><span>·</span><span>{'⭐'.repeat(book.rating)}</span>
+                          </div>
+                        </div>
+                        <Link to={book.articleUrl} className="flex-shrink-0 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accent }}>
+                          查看笔记 <ArrowRight size={14} />
                         </Link>
+                      </div>
+                      <p className="text-sm leading-relaxed mb-2" style={{ color: muted }}>{book.summary}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {book.note.split('、').map(tag => (
+                          <span key={tag} className="px-2 py-1 rounded text-xs" style={{ background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)', color: accent }}>{tag}</span>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -767,68 +370,112 @@ export default function HomeNew({ theme }) {
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ===== 锻炼 ===== */}
+      {exerciseConfig.enabled !== false && (
+        <section id="exercise" className="py-20 px-6" style={{ background: isDark ? '#161B22' : '#F8F7F4' }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-10">
+              <div>
+                <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: text }}>{exerciseConfig.title}</h2>
+                <p className="text-sm" style={{ color: muted }}>{exerciseConfig.motto}</p>
+              </div>
+              <Link to="/exercise" className="text-sm font-medium flex items-center gap-1" style={{ color: accent }}>
+                查看全部 <ArrowRight size={14} />
+              </Link>
+            </div>
+            {exerciseConfig.stats?.enabled !== false && (
+              <div className="grid grid-cols-3 gap-4 mb-10">
+                {[
+                  { label: '连续打卡', value: `${exerciseConfig.stats.streak}天`, icon: '🔥' },
+                  { label: '今年跑量', value: `${exerciseConfig.stats.yearDistance}km`, icon: '🏃' },
+                  { label: '本周跑量', value: `${exerciseConfig.stats.weekDistance}km`, icon: '📊' },
+                ].map(stat => (
+                  <div key={stat.label} className="rounded-xl p-5 text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                    <span className="text-2xl block mb-2">{stat.icon}</span>
+                    <div className="text-2xl font-bold mb-1" style={{ color: text }}>{stat.value}</div>
+                    <div className="text-xs" style={{ color: muted }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {exerciseConfig.trajectory?.enabled !== false && (
+                <div className="rounded-xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                  <div className="relative aspect-[4/3]">
+                    <img src={exerciseConfig.trajectory.image} alt="跑步轨迹" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%)' }} />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-white font-medium mb-1">{exerciseConfig.trajectory.title}</div>
+                      <div className="text-white/70 text-sm">{exerciseConfig.trajectory.subtitle}</div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm" style={{ color: muted }}>{exerciseConfig.trajectory.description}</p>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-4">
+                <h3 className="font-medium" style={{ color: muted }}>最近跑步</h3>
+                {enabledRuns.slice(0, 3).map(record => (
+                  <div key={record.id} className="rounded-xl overflow-hidden transition-all hover:shadow-md group" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                    <div className="flex">
+                      <div className="w-32 h-24 flex-shrink-0">
+                        <img src={record.image} alt={`跑步 ${record.date}`} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs" style={{ color: muted }}>{record.date}</span>
+                          <span className="text-xs font-medium" style={{ color: accent }}>{record.distance}km</span>
+                        </div>
+                        <p className="text-sm leading-relaxed mb-2 line-clamp-2" style={{ color: text }}>{record.note}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs" style={{ color: muted }}>{record.duration} · 配速 {record.pace}</span>
+                          <Link to={record.articleUrl} className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accent }}>
+                            查看记录 <ArrowRight size={12} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ===== 关于我 ===== */}
-      <section className="py-20 px-6">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif text-3xl font-bold mb-6" style={{ color: text }}>
-            关于我
-          </h2>
-          <div
-            className="rounded-xl p-8 mb-8"
-            style={{ background: cardBg, border: `1px solid ${border}` }}
-          >
-            <p className="text-base leading-relaxed mb-6" style={{ color: muted }}>
-              我是小福，甘肃深山出来的普通人。
-            </p>
-            <p className="text-base leading-relaxed mb-6" style={{ color: muted }}>
-              爷爷挖药给孙子攒娶媳妇的钱，到走都没看到孙子娶上媳妇。
-              母亲不识字，照顾瘫痪爷爷三十年。
-            </p>
-            <p className="text-base leading-relaxed" style={{ color: muted }}>
-              我靠读书走出大山，现在用AI给自己造一条自由的路。
-            </p>
+      {aboutConfig.enabled !== false && (
+        <section className="py-20 px-6">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="font-serif text-3xl font-bold mb-6" style={{ color: text }}>{aboutConfig.title}</h2>
+            <div className="rounded-xl p-8 mb-8" style={{ background: cardBg, border: `1px solid ${border}` }}>
+              {(aboutConfig.paragraphs || []).map((p, idx) => (
+                <p key={idx} className="text-base leading-relaxed mb-6 last:mb-0" style={{ color: muted }}>{p}</p>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {(aboutConfig.contacts || []).filter(c => c.enabled !== false).map(contact => (
+                contact.url ? (
+                  <a key={contact.name} href={contact.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all hover:shadow-md"
+                    style={{ borderColor: border, color: muted }}>
+                    <span>{contact.icon}</span> {contact.name}
+                  </a>
+                ) : (
+                  <span key={contact.name} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border"
+                    style={{ borderColor: border, color: muted }}>
+                    <span>{contact.icon}</span> {contact.name}：{contact.value}
+                  </span>
+                )
+              ))}
+            </div>
           </div>
-
-          {/* 联系方式 */}
-          <div className="flex flex-wrap gap-4">
-            <a
-              href="https://twitter.com/xiaofu"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all hover:shadow-md"
-              style={{ borderColor: border, color: muted }}
-            >
-              𝕏 推特
-            </a>
-            <a
-              href="https://douyin.com/user/xiaofu"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all hover:shadow-md"
-              style={{ borderColor: border, color: muted }}
-            >
-              📱 抖音
-            </a>
-            <a
-              href="mailto:xiaofu@example.com"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all hover:shadow-md"
-              style={{ borderColor: border, color: muted }}
-            >
-              ✉️ 邮箱
-            </a>
-            <span
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border"
-              style={{ borderColor: border, color: muted }}
-            >
-              💬 微信：xiaofu_ai
-            </span>
-          </div>
-        </div>
-      </section>
-
+        </section>
+      )}
     </div>
   )
 }
