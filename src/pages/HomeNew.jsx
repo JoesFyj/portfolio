@@ -8,9 +8,18 @@ function useSiteConfig() {
   const [config, setConfig] = useState(() => getConfig())
   
   useEffect(() => {
+    // storage 事件只在其他标签页触发
     const handleStorage = () => setConfig(getConfig())
     window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+    
+    // 同标签页监听配置更新事件
+    const handleConfigUpdate = () => setConfig(getConfig())
+    window.addEventListener('configUpdated', handleConfigUpdate)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('configUpdated', handleConfigUpdate)
+    }
   }, [])
   
   return config

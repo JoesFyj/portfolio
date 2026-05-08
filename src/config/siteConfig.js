@@ -222,14 +222,18 @@ export function getConfig() {
     const saved = localStorage.getItem(CONFIG_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      // 深度合并，确保新字段存在
-      return deepMerge(DEFAULT_CONFIG, parsed)
+      // 用户配置优先，直接使用，不合并默认值
+      // 这样用户修改后的配置不会被默认值覆盖
+      return parsed
     }
   } catch (e) {
     console.error('Failed to load config:', e)
   }
   
-  return DEFAULT_CONFIG
+  // 首次加载，保存默认配置到 localStorage
+  const initial = JSON.parse(JSON.stringify(DEFAULT_CONFIG))
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(initial))
+  return initial
 }
 
 export function saveConfig(config) {
@@ -237,6 +241,8 @@ export function saveConfig(config) {
   
   try {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(config))
+    // 通知同标签页的页面更新配置
+    window.dispatchEvent(new Event('configUpdated'))
     return true
   } catch (e) {
     console.error('Failed to save config:', e)

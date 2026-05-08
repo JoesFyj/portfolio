@@ -43,7 +43,7 @@ export default function Admin({ theme }) {
   const cardBg = isDark ? '#161B22' : '#FFFFFF'
   const accent = '#2D6A4F'
 
-  // 保存配置
+  // 保存配置（自动同步到 localStorage + 通知同标签页更新）
   const handleSave = () => {
     saveConfig(config)
     setSaveStatus('已保存')
@@ -70,8 +70,8 @@ export default function Admin({ theme }) {
     const file = e.target.files[0]
     if (file) {
       importConfig(file)
-        .then(() => {
-          setConfig(getConfig())
+        .then((newConfig) => {
+          setConfig(newConfig)
           setSaveStatus('导入成功')
           setTimeout(() => setSaveStatus(''), 2000)
         })
