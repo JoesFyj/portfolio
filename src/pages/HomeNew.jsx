@@ -174,8 +174,18 @@ const WORKS_DATA = [
   },
 ]
 
-// ==================== 读书数据（支持心得 + 文章链接）====================
+// ==================== 读书数据（全貌 + 详细记录 + 心得 + 文章链接）====================
 const BOOKS_DATA = {
+  // 阅读全貌统计
+  overview: {
+    total: 12,                    // 今年已读
+    target: 24,                   // 年度目标
+    pages: 3680,                  // 累计页数
+    hours: 156,                   // 累计阅读时长（小时）
+    streak: 45,                   // 连续阅读天数
+    image: 'https://placehold.co/800x400/6366F1/ffffff?text=Reading+Journey+2026',
+  },
+  // 当前在读
   current: {
     name: '纳瓦尔宝典',
     progress: 68,
@@ -183,33 +193,53 @@ const BOOKS_DATA = {
     summary: '财富是睡觉时也能赚钱的资产，代码和媒体是普通人的杠杆。',
     articleUrl: '/reading/naval-almanac',
   },
-  finished: [
+  // 详细阅读记录（按时间倒序）
+  records: [
     {
+      id: 1,
       name: '穷查理宝典',
+      cover: '📖',
       summary: '多元思维模型是理解世界的工具箱，掌握80-90个重要模型就能解决大部分问题。',
       note: '逆向思维、复利效应、能力圈边界',
-      cover: '📖',
       articleUrl: '/reading/poor-charlies-almanack',
       readAt: '2026-03-15',
+      rating: 5,                  // 评分 1-5
+      pages: 580,
     },
     {
+      id: 2,
       name: '原则',
+      cover: '📖',
       summary: '极度透明 + 极度求真 = 高效决策。把决策过程系统化，避免重复犯错。',
       note: '痛苦+反思=进步，可信度加权决策',
-      cover: '📖',
       articleUrl: '/reading/principles',
       readAt: '2026-02-20',
+      rating: 5,
+      pages: 592,
     },
     {
+      id: 3,
       name: '黑天鹅',
+      cover: '📖',
       summary: '世界由极端、未知、小概率事件主导。不要预测，要构建抗脆弱性。',
       note: '极端斯坦、非线性、杠铃策略',
-      cover: '📖',
       articleUrl: '/reading/black-swan',
       readAt: '2026-01-10',
+      rating: 4,
+      pages: 450,
+    },
+    {
+      id: 4,
+      name: '思考，快与慢',
+      cover: '📖',
+      summary: '系统1（直觉）和系统2（理性）的博弈，理解决策背后的认知机制。',
+      note: '认知偏差、锚定效应、损失厌恶',
+      articleUrl: '/reading/thinking-fast-slow',
+      readAt: '2025-12-20',
+      rating: 4,
+      pages: 512,
     },
   ],
-  total: 12,
 }
 
 // ==================== 跑步数据（支持单次记录 + 轨迹 + 文章链接）====================
@@ -454,7 +484,7 @@ export default function HomeNew({ theme }) {
                 读书 · 以书为粮
               </h2>
               <p className="text-sm" style={{ color: muted }}>
-                今年已读 {BOOKS_DATA.total} 本 · 读有所思，思有所得
+                今年已读 {BOOKS_DATA.overview.total} 本 · 读有所思，思有所得
               </p>
             </div>
             <Link
@@ -466,76 +496,152 @@ export default function HomeNew({ theme }) {
             </Link>
           </div>
 
-          {/* 当前在读 */}
-          <div
-            className="rounded-xl p-6 mb-8"
-            style={{
-              background: isDark ? 'rgba(45,106,79,0.1)' : 'rgba(45,106,79,0.05)',
-              border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
-            }}
-          >
-            <div className="flex items-start gap-4">
-              <span className="text-5xl">{BOOKS_DATA.current.cover}</span>
-              <div className="flex-1">
-                <div className="font-semibold text-lg mb-1" style={{ color: text }}>
-                  当前在读：{BOOKS_DATA.current.name}
-                </div>
-                <p className="text-sm mb-3 leading-relaxed" style={{ color: muted }}>
-                  {BOOKS_DATA.current.summary}
-                </p>
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="flex-1 h-2 rounded-full"
-                    style={{ background: isDark ? '#21262D' : '#E8E5DF' }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${BOOKS_DATA.current.progress}%`, background: '#2D6A4F' }}
-                    />
+          {/* 阅读全貌 + 当前在读 左右布局 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            {/* 左侧：阅读全貌统计 */}
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ background: cardBg, border: `1px solid ${border}` }}
+            >
+              <div className="relative aspect-[16/9]">
+                <img
+                  src={BOOKS_DATA.overview.image}
+                  alt="阅读全貌"
+                  className="w-full h-full object-cover"
+                />
+                <div 
+                  className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)' }}
+                />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="text-white font-medium mb-2">2026 阅读之旅</div>
+                  <div className="flex items-center gap-4 text-white/80 text-sm">
+                    <span>目标 {BOOKS_DATA.overview.target} 本</span>
+                    <span>·</span>
+                    <span>已完成 {Math.round(BOOKS_DATA.overview.total / BOOKS_DATA.overview.target * 100)}%</span>
                   </div>
-                  <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
-                    {BOOKS_DATA.current.progress}%
-                  </span>
                 </div>
-                <Link
-                  to={BOOKS_DATA.current.articleUrl}
-                  className="inline-flex items-center gap-1 text-sm font-medium"
-                  style={{ color: '#2D6A4F' }}
-                >
-                  阅读笔记 <ArrowRight size={14} />
-                </Link>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.total}</div>
+                    <div className="text-xs" style={{ color: muted }}>已读书籍</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.pages}</div>
+                    <div className="text-xs" style={{ color: muted }}>累计页数</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold" style={{ color: '#2D6A4F' }}>{BOOKS_DATA.overview.hours}h</div>
+                    <div className="text-xs" style={{ color: muted }}>阅读时长</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧：当前在读 */}
+            <div
+              className="rounded-xl p-6 flex flex-col justify-center"
+              style={{
+                background: isDark ? 'rgba(45,106,79,0.1)' : 'rgba(45,106,79,0.05)',
+                border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
+              }}
+            >
+              <div className="text-xs font-medium mb-4" style={{ color: '#2D6A4F' }}>当前在读</div>
+              <div className="flex items-start gap-4">
+                <span className="text-5xl">{BOOKS_DATA.current.cover}</span>
+                <div className="flex-1">
+                  <div className="font-semibold text-lg mb-2" style={{ color: text }}>
+                    {BOOKS_DATA.current.name}
+                  </div>
+                  <p className="text-sm mb-4 leading-relaxed" style={{ color: muted }}>
+                    {BOOKS_DATA.current.summary}
+                  </p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="flex-1 h-2 rounded-full"
+                      style={{ background: isDark ? '#21262D' : '#E8E5DF' }}
+                    >
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${BOOKS_DATA.current.progress}%`, background: '#2D6A4F' }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
+                      {BOOKS_DATA.current.progress}%
+                    </span>
+                  </div>
+                  <Link
+                    to={BOOKS_DATA.current.articleUrl}
+                    className="inline-flex items-center gap-1 text-sm font-medium"
+                    style={{ color: '#2D6A4F' }}
+                  >
+                    阅读笔记 <ArrowRight size={14} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 最近读完 - 卡片展示心得 */}
-          <h3 className="font-medium mb-4" style={{ color: muted }}>最近读完</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {BOOKS_DATA.finished.map(book => (
+          {/* 详细阅读记录 */}
+          <h3 className="font-medium mb-4" style={{ color: muted }}>阅读记录</h3>
+          <div className="space-y-4">
+            {BOOKS_DATA.records.map(book => (
               <div
-                key={book.name}
+                key={book.id}
                 className="rounded-xl p-5 transition-all hover:shadow-md group"
                 style={{ background: cardBg, border: `1px solid ${border}` }}
               >
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-3xl">{book.cover}</span>
-                  <div className="flex-1">
-                    <div className="font-medium mb-1" style={{ color: text }}>{book.name}</div>
-                    <div className="text-xs mb-2" style={{ color: muted }}>{book.note}</div>
+                <div className="flex items-start gap-4">
+                  {/* 封面 */}
+                  <div className="flex-shrink-0">
+                    <div
+                      className="w-16 h-20 rounded-lg flex items-center justify-center text-3xl"
+                      style={{ background: isDark ? '#21262D' : '#F0EFEA' }}
+                    >
+                      {book.cover}
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm leading-relaxed mb-3" style={{ color: muted }}>
-                  {book.summary}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs" style={{ color: muted }}>{book.readAt}</span>
-                  <Link
-                    to={book.articleUrl}
-                    className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: '#2D6A4F' }}
-                  >
-                    查看笔记 <ArrowRight size={12} />
-                  </Link>
+                  {/* 内容 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div>
+                        <div className="font-semibold text-lg mb-1" style={{ color: text }}>{book.name}</div>
+                        <div className="flex items-center gap-3 text-xs" style={{ color: muted }}>
+                          <span>{book.readAt}</span>
+                          <span>·</span>
+                          <span>{book.pages} 页</span>
+                          <span>·</span>
+                          <span>{'⭐'.repeat(book.rating)}</span>
+                        </div>
+                      </div>
+                      <Link
+                        to={book.articleUrl}
+                        className="flex-shrink-0 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ color: '#2D6A4F' }}
+                      >
+                        查看笔记 <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                    <p className="text-sm leading-relaxed mb-2" style={{ color: muted }}>
+                      {book.summary}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {book.note.split('、').map(tag => (
+                        <span
+                          key={tag}
+                          className="px-2 py-1 rounded text-xs"
+                          style={{
+                            background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
+                            color: '#2D6A4F',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
