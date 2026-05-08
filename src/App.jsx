@@ -4,37 +4,27 @@ import Nav from './components/Nav'
 import DynamicBg from './components/DynamicBg'
 import HomeNew from './pages/HomeNew'
 import Works from './pages/Works'
-import Journey from './pages/Journey'
-
-import ContentOps from './pages/ContentOps'
+import Connect from './pages/Connect'
+import Reading from './pages/Reading'
+import Exercise from './pages/Exercise'
 import AdminDashboardNew from './components/AdminDashboardNew'
 
 // Legacy pages (kept for backward compatibility, accessible via direct URL)
+import Journey from './pages/Journey'
+import ContentOps from './pages/ContentOps'
 import Hub from './pages/Hub'
 import HubOps from './pages/HubOps'
 
 export default function App() {
-  const [lang, setLang] = useState('zh')
   const [theme, setTheme] = useState('light')
   const [showAdmin, setShowAdmin] = useState(false)
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('site_config_v2') || '{}')
-      if (saved._lang) setLang(saved._lang)
       if (saved._theme) setTheme(saved._theme)
     } catch (e) {}
   }, [])
-
-  function handleLangToggle() {
-    const next = lang === 'zh' ? 'en' : 'zh'
-    setLang(next)
-    try {
-      const saved = JSON.parse(localStorage.getItem('site_config_v2') || '{}')
-      saved._lang = next
-      localStorage.setItem('site_config_v2', JSON.stringify(saved))
-    } catch (e) {}
-  }
 
   function handleThemeToggle() {
     const next = theme === 'light' ? 'dark' : 'light'
@@ -53,21 +43,21 @@ export default function App() {
       <DynamicBg theme={theme} />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <Nav
-          lang={lang}
           theme={theme}
-          onLangToggle={handleLangToggle}
           onThemeToggle={handleThemeToggle}
           onAdminClick={() => setShowAdmin(true)}
         />
         <Routes>
-          <Route path="/" element={<HomeNew lang={lang} theme={theme} />} />
-          <Route path="/works" element={<Works lang={lang} theme={theme} />} />
-          <Route path="/journey" element={<Journey lang={lang} theme={theme} />} />
-          {/* Content Ops */}
-          <Route path="/content-ops" element={<ContentOps theme={theme} />} />
+          <Route path="/" element={<HomeNew theme={theme} />} />
+          <Route path="/works" element={<Works theme={theme} />} />
+          <Route path="/connect" element={<Connect theme={theme} />} />
+          <Route path="/reading" element={<Reading theme={theme} />} />
+          <Route path="/exercise" element={<Exercise theme={theme} />} />
           {/* Legacy routes */}
-          <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />
-          <Route path="/hub/ops" element={<HubOps lang={lang} theme={theme} />} />
+          <Route path="/journey" element={<Journey theme={theme} />} />
+          <Route path="/content-ops" element={<ContentOps theme={theme} />} />
+          <Route path="/hub" element={<Hub theme={theme} />} />
+          <Route path="/hub/ops" element={<HubOps theme={theme} />} />
         </Routes>
         {showAdmin && (
           <AdminDashboardNew

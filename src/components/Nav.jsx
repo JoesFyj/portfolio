@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Settings, Globe, Sun, Moon, Menu, X } from 'lucide-react'
+import { Settings, Sun, Moon, Menu, X } from 'lucide-react'
 
-export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminClick }) {
-  const isZh = lang === 'zh'
+export default function Nav({ theme, onThemeToggle, onAdminClick }) {
   const isDark = theme === 'dark'
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
@@ -22,10 +21,9 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
   }
 
   const links = [
-    { to: '/',           label: isZh ? '首页' : 'Home' },
-    { to: '/works',      label: isZh ? '作品集' : 'Works' },
-    { to: '/journey',    label: isZh ? '心路历程' : 'Journey' },
-    { to: '/content-ops', label: isZh ? '内容运营' : 'Content Ops' },
+    { to: '/',      label: '首页' },
+    { to: '/works', label: '作品' },
+    { to: '/connect', label: '联系' },
   ]
 
   return (
@@ -46,7 +44,7 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
           style={{ color: textColor }}
           onClick={() => setMenuOpen(false)}
         >
-          小福分享舍
+          小福AI自由
         </Link>
 
         {/* Desktop Nav */}
@@ -75,14 +73,6 @@ export default function Nav({ lang, theme, onLangToggle, onThemeToggle, onAdminC
             title={isDark ? '切换浅色模式' : '切换深色模式'}
           >
             {isDark ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-          <button
-            onClick={onLangToggle}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border transition-all"
-            style={{ borderColor: borderColor, color: mutedColor }}
-          >
-            <Globe size={13} />
-            {isZh ? 'EN' : '中'}
           </button>
           <button
             onClick={onAdminClick}
