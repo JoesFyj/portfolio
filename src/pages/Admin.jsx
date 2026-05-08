@@ -5,6 +5,7 @@ import {
   User, BookOpen, Activity, Briefcase, Share2, Settings, Palette
 } from 'lucide-react'
 import { getConfig, saveConfig, resetConfig, exportConfig, importConfig } from '../config/siteConfig'
+import ImageUploader, { AvatarUploader } from '../components/ImageUploader'
 
 // 模块图标映射
 const MODULE_ICONS = {
@@ -247,14 +248,24 @@ export default function Admin({ theme }) {
               </FormGroup>
               
               <FormGroup label="头像">
-                <input
-                  type="text"
-                  value={config.hero.avatar}
-                  onChange={(e) => updateField('hero', 'avatar', e.target.value)}
-                  placeholder="emoji 或图片 URL"
-                  className="w-full px-4 py-2 rounded-lg border text-sm"
-                  style={{ borderColor: border, background: cardBg, color: text }}
-                />
+                <div className="flex items-center gap-4">
+                  <AvatarUploader 
+                    value={config.hero.avatar} 
+                    onChange={(val) => updateField('hero', 'avatar', val)} 
+                    theme={theme} 
+                  />
+                  <div className="flex-1">
+                    <p className="text-xs mb-2" style={{ color: muted }}>支持本地上传或输入 emoji/图片 URL</p>
+                    <input
+                      type="text"
+                      value={config.hero.avatar}
+                      onChange={(e) => updateField('hero', 'avatar', e.target.value)}
+                      placeholder="输入 emoji 或图片 URL"
+                      className="w-full px-4 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                  </div>
+                </div>
               </FormGroup>
               
               <FormGroup label="名字">
@@ -379,6 +390,135 @@ export default function Admin({ theme }) {
             </ModuleSection>
           )}
 
+          {/* 作品模块配置 */}
+          {activeModule === 'works' && (
+            <ModuleSection title="作品展示配置" description="作品列表与封面">
+              <FormGroup label="启用模块">
+                <Toggle 
+                  checked={config.works?.enabled !== false} 
+                  onChange={() => updateField('works', 'enabled', !config.works?.enabled)}
+                />
+              </FormGroup>
+              
+              <FormGroup label="标题">
+                <input
+                  type="text"
+                  value={config.works?.title || '作品展示'}
+                  onChange={(e) => updateField('works', 'title', e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="显示在首页轮播">
+                <Toggle 
+                  checked={config.works?.showOnHero !== false} 
+                  onChange={() => updateField('works', 'showOnHero', !config.works?.showOnHero)}
+                />
+              </FormGroup>
+              
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>作品列表</h4>
+                  <button
+                    onClick={() => {
+                      const newItems = [...(config.works?.items || [])]
+                      newItems.push({
+                        id: Date.now(),
+                        name: '新作品',
+                        desc: '作品描述',
+                        icon: '📦',
+                        color: '#2D6A4F',
+                        url: '/works',
+                        images: [],
+                        enabled: true,
+                      })
+                      updateField('works', 'items', newItems)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
+                    style={{ borderColor: border, color: muted }}
+                  >
+                    <Plus size={14} /> 添加作品
+                  </button>
+                </div>
+                
+                {(config.works?.items || []).map((work, index) => (
+                  <div key={work.id} className="p-4 rounded-lg mb-4" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <GripVertical size={16} style={{ color: muted }} />
+                      <span className="text-sm font-medium flex-1" style={{ color: text }}>作品 {index + 1}</span>
+                      <button
+                        onClick={() => {
+                          const newItems = (config.works?.items || []).filter((_, i) => i !== index)
+                          updateField('works', 'items', newItems)
+                        }}
+                        className="p-1.5 rounded hover:bg-red-500/10"
+                        style={{ color: '#EF4444' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    
+                    <FormGroup label="作品名称">
+                      <input
+                        type="text"
+                        value={work.name}
+                        onChange={(e) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].name = e.target.value
+                          updateField('works', 'items', newItems)
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+                    
+                    <FormGroup label="描述">
+                      <input
+                        type="text"
+                        value={work.desc}
+                        onChange={(e) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].desc = e.target.value
+                          updateField('works', 'items', newItems)
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+                    
+                    <FormGroup label="封面图片">
+                      <ImageUploader
+                        value={work.images?.[0]}
+                        onChange={(val) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].images = [val]
+                          updateField('works', 'items', newItems)
+                        }}
+                        theme={theme}
+                      />
+                    </FormGroup>
+                    
+                    <FormGroup label="链接">
+                      <input
+                        type="text"
+                        value={work.url}
+                        onChange={(e) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].url = e.target.value
+                          updateField('works', 'items', newItems)
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+                  </div>
+                ))}
+              </div>
+            </ModuleSection>
+          )}
+
+
           {/* 读书模块配置 */}
           {activeModule === 'reading' && (
             <ModuleSection title="读书模块配置" description="阅读数据与记录">
@@ -401,7 +541,14 @@ export default function Admin({ theme }) {
               
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
                 <h4 className="text-sm font-medium mb-4" style={{ color: text }}>阅读全貌</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <FormGroup label="封面图">
+                  <ImageUploader 
+                    value={config.reading.overview.image} 
+                    onChange={(val) => updateNestedField('reading', 'overview.image', val)} 
+                    theme={theme}
+                  />
+                </FormGroup>
+                <div className="grid grid-cols-2 gap-4 mt-4">
                   <FormGroup label="年度目标">
                     <input
                       type="number"
@@ -443,15 +590,27 @@ export default function Admin({ theme }) {
               
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
                 <h4 className="text-sm font-medium mb-4" style={{ color: text }}>当前在读</h4>
-                <FormGroup label="书名">
-                  <input
-                    type="text"
-                    value={config.reading.current.name}
-                    onChange={(e) => updateNestedField('reading', 'current.name', e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border text-sm"
-                    style={{ borderColor: border, background: cardBg, color: text }}
-                  />
-                </FormGroup>
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-shrink-0">
+                    <ImageUploader
+                      value={config.reading.current.cover}
+                      onChange={(val) => updateNestedField('reading', 'current.cover', val)}
+                      placeholder="封面"
+                      theme={theme}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FormGroup label="书名">
+                      <input
+                        type="text"
+                        value={config.reading.current.name}
+                        onChange={(e) => updateNestedField('reading', 'current.name', e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+                  </div>
+                </div>
                 <FormGroup label="阅读进度 (%)">
                   <input
                     type="number"
@@ -506,6 +665,17 @@ export default function Admin({ theme }) {
                 />
               </FormGroup>
               
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <h4 className="text-sm font-medium mb-4" style={{ color: text }}>跑步轨迹</h4>
+                <FormGroup label="轨迹封面图">
+                  <ImageUploader
+                    value={config.exercise.trajectory?.image}
+                    onChange={(val) => updateNestedField('exercise', 'trajectory.image', val)}
+                    theme={theme}
+                  />
+                </FormGroup>
+              </div>
+
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
                 <h4 className="text-sm font-medium mb-4" style={{ color: text }}>核心数据</h4>
                 <div className="grid grid-cols-3 gap-4">
