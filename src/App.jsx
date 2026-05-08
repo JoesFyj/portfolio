@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Nav from './components/Nav'
 import DynamicBg from './components/DynamicBg'
+import AIAssistant from './components/AIAssistant'
 import HomeNew from './pages/HomeNew'
 import Works from './pages/Works'
 import Connect from './pages/Connect'
@@ -64,6 +65,9 @@ export default function App() {
             onClose={() => setShowAdmin(false)}
           />
         )}
+        
+        {/* AI 数字分身助手 */}
+        <AIAssistant theme={theme} />
       </div>
     </div>
   )
