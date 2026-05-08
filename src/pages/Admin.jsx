@@ -713,7 +713,7 @@ export default function Admin({ theme }) {
 
           {/* 关于模块配置 */}
           {activeModule === 'about' && (
-            <ModuleSection title="关于我配置" description="联系页面布局与内容">
+            <ModuleSection title="联系页面配置" description="主视觉卡片与快捷链接">
               <FormGroup label="启用模块">
                 <Toggle 
                   checked={config.about?.enabled !== false} 
@@ -721,21 +721,55 @@ export default function Admin({ theme }) {
                 />
               </FormGroup>
               
-              <FormGroup label="标语">
+              <FormGroup label="页面标题">
                 <input
                   type="text"
-                  value={config.about?.tagline || '热爱 · 创造 · 分享'}
-                  onChange={(e) => updateField('about', 'tagline', e.target.value)}
+                  value={config.about?.title || '联系小福'}
+                  onChange={(e) => updateField('about', 'title', e.target.value)}
                   className="w-full px-4 py-2 rounded-lg border text-sm"
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
               </FormGroup>
               
-              <FormGroup label="个人简介">
-                <textarea
-                  value={config.about?.bio || ''}
-                  onChange={(e) => updateField('about', 'bio', e.target.value)}
-                  rows={3}
+              <FormGroup label="副标题">
+                <input
+                  type="text"
+                  value={config.about?.subtitle || ''}
+                  onChange={(e) => updateField('about', 'subtitle', e.target.value)}
+                  placeholder="选择你喜欢的方式，随时找我聊聊"
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="主视觉背景图">
+                <input
+                  type="text"
+                  value={config.about?.heroImage || ''}
+                  onChange={(e) => updateField('about', 'heroImage', e.target.value)}
+                  placeholder="图片 URL 或 base64"
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="公众号二维码">
+                <input
+                  type="text"
+                  value={config.about?.qrcodes?.wechatOfficial || ''}
+                  onChange={(e) => updateNestedField('about', 'qrcodes.wechatOfficial', e.target.value)}
+                  placeholder="图片 URL 或 base64"
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="个人微信二维码">
+                <input
+                  type="text"
+                  value={config.about?.qrcodes?.wechat || ''}
+                  onChange={(e) => updateNestedField('about', 'qrcodes.wechat', e.target.value)}
+                  placeholder="图片 URL 或 base64"
                   className="w-full px-4 py-2 rounded-lg border text-sm"
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
@@ -772,14 +806,15 @@ export default function Admin({ theme }) {
                 />
               </FormGroup>
               
+              {/* 快捷链接配置 */}
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium" style={{ color: text }}>快速导航</h4>
+                  <h4 className="text-sm font-medium" style={{ color: text }}>快捷链接</h4>
                   <button
                     onClick={() => {
-                      const newLinks = [...(config.about?.navLinks || [])]
-                      newLinks.push({ label: '新页面', to: '/' })
-                      updateField('about', 'navLinks', newLinks)
+                      const newLinks = [...(config.about?.quickLinks || [])]
+                      newLinks.push({ icon: 'external', label: '新链接', url: '#' })
+                      updateField('about', 'quickLinks', newLinks)
                     }}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
                     style={{ borderColor: border, color: muted }}
@@ -788,15 +823,35 @@ export default function Admin({ theme }) {
                   </button>
                 </div>
                 
-                {(config.about?.navLinks || []).map((link, index) => (
+                {(config.about?.quickLinks || []).map((link, index) => (
                   <div key={index} className="flex items-center gap-2 mb-3">
+                    <select
+                      value={link.icon}
+                      onChange={(e) => {
+                        const newLinks = [...(config.about?.quickLinks || [])]
+                        newLinks[index].icon = e.target.value
+                        updateField('about', 'quickLinks', newLinks)
+                      }}
+                      className="w-24 px-2 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    >
+                      <option value="feishu">飞书</option>
+                      <option value="twitter">Twitter</option>
+                      <option value="github">GitHub</option>
+                      <option value="mail">邮箱</option>
+                      <option value="send">发送</option>
+                      <option value="message">消息</option>
+                      <option value="book">书本</option>
+                      <option value="location">位置</option>
+                      <option value="external">链接</option>
+                    </select>
                     <input
                       type="text"
                       value={link.label}
                       onChange={(e) => {
-                        const newLinks = [...(config.about?.navLinks || [])]
+                        const newLinks = [...(config.about?.quickLinks || [])]
                         newLinks[index].label = e.target.value
-                        updateField('about', 'navLinks', newLinks)
+                        updateField('about', 'quickLinks', newLinks)
                       }}
                       placeholder="标签"
                       className="flex-1 px-3 py-2 rounded border text-sm"
@@ -804,20 +859,20 @@ export default function Admin({ theme }) {
                     />
                     <input
                       type="text"
-                      value={link.to}
+                      value={link.url || ''}
                       onChange={(e) => {
-                        const newLinks = [...(config.about?.navLinks || [])]
-                        newLinks[index].to = e.target.value
-                        updateField('about', 'navLinks', newLinks)
+                        const newLinks = [...(config.about?.quickLinks || [])]
+                        newLinks[index].url = e.target.value || null
+                        updateField('about', 'quickLinks', newLinks)
                       }}
-                      placeholder="链接"
+                      placeholder="链接（空则纯展示）"
                       className="flex-1 px-3 py-2 rounded border text-sm"
                       style={{ borderColor: border, background: cardBg, color: text }}
                     />
                     <button
                       onClick={() => {
-                        const newLinks = (config.about?.navLinks || []).filter((_, i) => i !== index)
-                        updateField('about', 'navLinks', newLinks)
+                        const newLinks = (config.about?.quickLinks || []).filter((_, i) => i !== index)
+                        updateField('about', 'quickLinks', newLinks)
                       }}
                       className="p-2 rounded hover:bg-red-500/10"
                       style={{ color: '#EF4444' }}
@@ -828,59 +883,14 @@ export default function Admin({ theme }) {
                 ))}
               </div>
               
+              {/* 社交图标配置 */}
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium" style={{ color: text }}>技能标签</h4>
-                  <button
-                    onClick={() => {
-                      const newSkills = [...(config.about?.skills || [])]
-                      newSkills.push('新技能')
-                      updateField('about', 'skills', newSkills)
-                    }}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
-                    style={{ borderColor: border, color: muted }}
-                  >
-                    <Plus size={14} /> 添加
-                  </button>
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  {(config.about?.skills || []).map((skill, index) => (
-                    <div key={index} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border"
-                      style={{ borderColor: border, background: cardBg, color: text }}
-                    >
-                      <input
-                        type="text"
-                        value={skill}
-                        onChange={(e) => {
-                          const newSkills = [...(config.about?.skills || [])]
-                          newSkills[index] = e.target.value
-                          updateField('about', 'skills', newSkills)
-                        }}
-                        className="bg-transparent outline-none w-20 text-center"
-                      />
-                      <button
-                        onClick={() => {
-                          const newSkills = (config.about?.skills || []).filter((_, i) => i !== index)
-                          updateField('about', 'skills', newSkills)
-                        }}
-                        className="ml-1 text-xs hover:text-red-500"
-                        style={{ color: muted }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-medium" style={{ color: text }}>社交图标</h4>
+                  <h4 className="text-sm font-medium" style={{ color: text }}>底部社交图标</h4>
                   <button
                     onClick={() => {
                       const newContacts = [...(config.about?.contacts || [])]
-                      newContacts.push({ name: '新平台', icon: '🔗', url: '', enabled: true })
+                      newContacts.push({ name: '新平台', icon: 'external', url: '', enabled: true })
                       updateField('about', 'contacts', newContacts)
                     }}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
@@ -892,18 +902,26 @@ export default function Admin({ theme }) {
                 
                 {(config.about?.contacts || []).map((contact, index) => (
                   <div key={index} className="flex items-center gap-2 mb-3">
-                    <input
-                      type="text"
+                    <select
                       value={contact.icon}
                       onChange={(e) => {
                         const newContacts = [...(config.about?.contacts || [])]
                         newContacts[index].icon = e.target.value
                         updateField('about', 'contacts', newContacts)
                       }}
-                      placeholder="图标"
-                      className="w-14 px-2 py-2 rounded border text-sm text-center"
+                      className="w-24 px-2 py-2 rounded border text-sm"
                       style={{ borderColor: border, background: cardBg, color: text }}
-                    />
+                    >
+                      <option value="feishu">飞书</option>
+                      <option value="twitter">Twitter</option>
+                      <option value="github">GitHub</option>
+                      <option value="mail">邮箱</option>
+                      <option value="send">发送</option>
+                      <option value="message">消息</option>
+                      <option value="book">书本</option>
+                      <option value="location">位置</option>
+                      <option value="external">链接</option>
+                    </select>
                     <input
                       type="text"
                       value={contact.name}

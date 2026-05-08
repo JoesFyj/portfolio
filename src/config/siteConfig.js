@@ -190,30 +190,37 @@ const DEFAULT_CONFIG = {
   // ===== 关于我配置 =====
   about: {
     enabled: true,
-    title: '关于我',
-    // 页面左侧个人信息
-    tagline: '热爱 · 创造 · 分享',
-    bio: '专注于 AI 自由实验与内容创作，致力于用技术放大个人产出，一个人干出一个小团队的量。',
-    // 右侧快速导航
-    navLinks: [
-      { label: '首页', to: '/' },
-      { label: '作品', to: '/works' },
-      { label: '读书', to: '/#reading' },
-      { label: '跑步', to: '/#exercise' },
+    title: '联系小福',
+    subtitle: '选择你喜欢的方式，随时找我聊聊',
+    
+    // 主视觉背景图
+    heroImage: '',
+    
+    // 二维码（base64 或 URL）
+    qrcodes: {
+      wechat: '',           // 个人微信二维码
+      wechatOfficial: '',   // 公众号二维码
+    },
+    
+    // 快捷链接（底部胶囊按钮）
+    quickLinks: [
+      { icon: 'feishu', label: '飞书知识库', url: '#' },
+      { icon: 'twitter', label: 'X (Twitter)', url: 'https://twitter.com/xiaofu' },
+      { icon: 'github', label: 'GitHub', url: 'https://github.com/xiaofu' },
+      { icon: 'location', label: '中国 · 甘肃', url: null },
     ],
-    // 技能标签
-    skills: ['AI', 'React', '内容创作', '自媒体运营', 'Python', 'Prompt Engineering'],
+    
     // 联系方式
     email: 'xiaofu@example.com',
     location: '中国 · 甘肃',
     copyright: '',
-    // 社交图标（用于左下角图标行）
+    
+    // 社交图标（底部圆形图标行）
     contacts: [
-      { name: 'GitHub', icon: '🐙', url: 'https://github.com/xiaofu', enabled: true },
-      { name: '推特', icon: '𝕏', url: 'https://twitter.com/xiaofu', enabled: true },
+      { name: 'GitHub', icon: 'github', url: 'https://github.com/xiaofu', enabled: true },
+      { name: '推特', icon: 'twitter', url: 'https://twitter.com/xiaofu', enabled: true },
       { name: '抖音', icon: '📱', url: 'https://douyin.com/user/xiaofu', enabled: true },
-      { name: '邮箱', icon: '✉️', url: 'mailto:xiaofu@example.com', enabled: true },
-      { name: '微信', icon: '💬', url: null, value: 'xiaofu_ai', enabled: true },
+      { name: '邮箱', icon: 'mail', url: 'mailto:xiaofu@example.com', enabled: true },
     ],
   },
 

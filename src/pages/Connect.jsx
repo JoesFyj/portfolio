@@ -1,218 +1,262 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Mail, MapPin, Github, Twitter, ExternalLink } from 'lucide-react'
+import { Mail, MapPin, Github, Twitter, ExternalLink, Send, MessageCircle, BookOpen } from 'lucide-react'
 import { getConfig } from '../config/siteConfig'
 
 export default function Connect({ theme }) {
   const isDark = theme === 'dark'
   const config = getConfig()
-
-  // about 模块配置
   const about = config.about || {}
 
   const bg = isDark ? '#0D1117' : '#FAF9F6'
   const text = isDark ? '#E6EDF3' : '#1C1C1E'
   const muted = isDark ? '#8B949E' : '#6B6860'
   const border = isDark ? '#30363D' : '#E8E5DF'
-  const cardBg = isDark ? 'rgba(22,27,34,0.8)' : 'rgba(255,255,255,0.7)'
+  const cardBg = isDark ? 'rgba(22,27,34,0.9)' : 'rgba(255,255,255,0.9)'
   const accent = config.theme?.primaryColor || '#2D6A4F'
 
-  // 从 hero 取头像和名字
-  const avatar = config.hero?.avatar || '🧑‍💻'
   const name = config.hero?.name || '小福'
-  const tagline = about.tagline || '热爱 · 创造 · 分享'
-  const bio = about.bio || '专注于 AI 自由实验与内容创作，致力于用技术放大个人产出。'
-  const navLinks = about.navLinks || [
-    { label: '首页', to: '/' },
-    { label: '作品', to: '/works' },
-    { label: '读书', to: '/#reading' },
-    { label: '跑步', to: '/#exercise' },
-  ]
-  const skills = about.skills || ['AI', 'React', '内容创作', '自媒体运营', 'Python', 'Prompt Engineering']
-  const contacts = about.contacts || []
-  const location = about.location || '中国 · 甘肃'
+  const title = about.title || `联系${name}`
+  const subtitle = about.subtitle || '选择你喜欢的方式，随时找我聊聊'
   const email = about.email || 'xiaofu@example.com'
+  const location = about.location || '中国 · 甘肃'
   const copyright = about.copyright || `© ${new Date().getFullYear()} ${name}. All rights reserved.`
 
+  // 二维码配置（支持 base64 或 URL）
+  const qrcodes = about.qrcodes || {
+    wechat: '',      // 微信二维码
+    wechatOfficial: '', // 公众号二维码
+  }
+
+  // 快捷链接
+  const quickLinks = about.quickLinks || [
+    { icon: 'feishu', label: '飞书知识库', url: '#' },
+    { icon: 'twitter', label: 'X (Twitter)', url: 'https://twitter.com/xiaofu' },
+    { icon: 'github', label: 'GitHub', url: 'https://github.com/xiaofu' },
+    { icon: 'location', label: location, url: null },
+  ]
+
+  // 社交图标
+  const contacts = about.contacts || []
+
+  const renderIcon = (type) => {
+    switch (type) {
+      case 'twitter': return <Twitter size={16} />
+      case 'github': return <Github size={16} />
+      case 'mail': return <Mail size={16} />
+      case 'send': return <Send size={16} />
+      case 'message': return <MessageCircle size={16} />
+      case 'book': return <BookOpen size={16} />
+      case 'location': return <MapPin size={16} />
+      case 'feishu': return (
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2zm4 8h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+      )
+      default: return <ExternalLink size={16} />
+    }
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-8" style={{ background: bg }}>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8" style={{ background: bg }}>
+      
+      {/* ===== 顶部标题区 ===== */}
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span 
+            className="w-2 h-2 rounded-full"
+            style={{ background: accent }}
+          />
+          <h1 
+            className="text-3xl md:text-4xl font-bold tracking-wider"
+            style={{ color: accent }}
+          >
+            {title}
+          </h1>
+          <span 
+            className="w-2 h-2 rounded-full"
+            style={{ background: accent }}
+          />
+        </div>
+        <p className="text-base" style={{ color: muted }}>{subtitle}</p>
+      </div>
+
+      {/* ===== 主视觉卡片 ===== */}
       <div
-        className="w-full max-w-5xl rounded-2xl p-6 md:p-10 backdrop-blur-xl"
+        className="w-full max-w-3xl rounded-2xl overflow-hidden mb-8"
         style={{
           background: cardBg,
           border: `1px solid ${border}`,
           boxShadow: isDark
-            ? '0 25px 50px -12px rgba(0,0,0,0.5)'
-            : '0 25px 50px -12px rgba(0,0,0,0.1)',
+            ? '0 25px 50px -12px rgba(0,0,0,0.6)'
+            : '0 25px 50px -12px rgba(0,0,0,0.15)',
         }}
       >
-
-        {/* 主布局：左侧信息 + 右侧三列 */}
-        <div className="flex flex-col lg:flex-row gap-10">
-
-          {/* ===== 左侧：个人名片 ===== */}
-          <div className="lg:w-[320px] flex-shrink-0">
-            {/* 头像 */}
-            <div className="mb-6">
-              {avatar.startsWith('data:') || avatar.startsWith('http') ? (
-                <img
-                  src={avatar}
-                  alt={name}
-                  className="w-20 h-20 rounded-2xl object-cover"
-                  style={{ boxShadow: `0 8px 24px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.12)'}` }}
-                />
-              ) : (
-                <div
-                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent}, ${accent}99)`,
-                    color: '#fff',
-                    boxShadow: `0 8px 24px ${isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.12)'}`,
-                  }}
-                >
-                  {avatar}
-                </div>
-              )}
-            </div>
-
-            {/* 名字 + 标语 */}
-            <h1 className="text-2xl font-bold mb-2" style={{ color: text }}>{name}</h1>
-            <p className="text-sm mb-4" style={{ color: accent }}>{tagline}</p>
-
-            {/* 简介 */}
-            <p className="text-sm leading-relaxed mb-6" style={{ color: muted }}>{bio}</p>
-
-            {/* 社交图标行 */}
-            <div className="flex items-center gap-3">
-              {(contacts.filter(c => c.enabled !== false && c.url).map((c) => (
-                <a
-                  key={c.name}
-                  href={c.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-                  style={{
-                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                    border: `1px solid ${border}`,
-                    color: muted,
-                  }}
-                  title={c.name}
-                >
-                  {c.icon?.length <= 2 ? (
-                    <span className="text-base">{c.icon}</span>
-                  ) : c.name === '邮箱' ? (
-                    <Mail size={16} />
-                  ) : c.name === '推特' || c.name === 'Twitter' ? (
-                    <Twitter size={16} />
-                  ) : c.name === 'GitHub' ? (
-                    <Github size={16} />
-                  ) : (
-                    <ExternalLink size={16} />
-                  )}
-                </a>
-              )))}
-            </div>
-          </div>
-
-          {/* ===== 右侧三列 ===== */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
-
-            {/* 快速导航 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: text }}>快速导航</h3>
-              <div className="space-y-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    to={link.to}
-                    className="block px-3 py-2 rounded-lg text-sm transition-all"
-                    style={{
-                      color: muted,
-                      ...(isDark
-                        ? { background: 'transparent' }
-                        : { background: 'transparent' }),
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
-                      e.currentTarget.style.color = accent
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                      e.currentTarget.style.color = muted
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* 技能 / 标签 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: text }}>技能标签</h3>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                    style={{
-                      background: isDark ? 'rgba(45,106,79,0.12)' : 'rgba(45,106,79,0.08)',
-                      color: accent,
-                      border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.15)'}`,
-                    }}
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* 联系方式 */}
-            <div>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: text }}>联系方式</h3>
-              <div className="space-y-3">
-                {email && (
-                  <a
-                    href={`mailto:${email}`}
-                    className="flex items-center gap-2 text-sm transition-colors"
-                    style={{ color: muted }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = accent}
-                    onMouseLeave={(e) => e.currentTarget.style.color = muted}
-                  >
-                    <Mail size={14} style={{ color: accent, flexShrink: 0 }} />
-                    <span className="truncate">{email}</span>
-                  </a>
-                )}
-                {location && (
-                  <div className="flex items-center gap-2 text-sm" style={{ color: muted }}>
-                    <MapPin size={14} style={{ color: accent, flexShrink: 0 }} />
-                    <span>{location}</span>
-                  </div>
-                )}
-                {/* 额外联系方式 */}
-                {contacts.filter(c => c.enabled !== false && !c.url && c.value).map((c) => (
-                  <div key={c.name} className="flex items-center gap-2 text-sm" style={{ color: muted }}>
-                    <span className="text-base">{c.icon}</span>
-                    <span>{c.name}: {c.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* 底部版权栏 */}
-        <div
-          className="mt-10 pt-6 flex items-center justify-between text-xs"
-          style={{ borderTop: `1px solid ${border}`, color: muted }}
+        {/* 背景图区域 */}
+        <div 
+          className="relative h-64 md:h-80"
+          style={{
+            background: about.heroImage 
+              ? `url(${about.heroImage}) center/cover`
+              : `linear-gradient(135deg, ${accent}22 0%, ${accent}08 50%, ${isDark ? '#0D1117' : '#FAF9F6'} 100%)`,
+          }}
         >
-          <span>{copyright}</span>
-          <span className="flex items-center gap-1">
-            Made with <span style={{ color: '#EF4444' }}>❤</span>
-          </span>
+          {/* 装饰性网格 */}
+          <div 
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: `linear-gradient(${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 1px, transparent 1px)`,
+              backgroundSize: '40px 40px',
+            }}
+          />
+
+          {/* 左侧公众号二维码 */}
+          {qrcodes.wechatOfficial && (
+            <div 
+              className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2"
+            >
+              <div 
+                className="p-2 rounded-xl"
+                style={{ 
+                  background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)',
+                  border: `1px solid ${border}`,
+                }}
+              >
+                <img 
+                  src={qrcodes.wechatOfficial} 
+                  alt="公众号" 
+                  className="w-24 h-24 md:w-28 md:h-28 object-contain"
+                />
+              </div>
+              {/* 悬浮标签 */}
+              <div 
+                className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-xs font-medium"
+                style={{ 
+                  background: accent, 
+                  color: '#fff',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                }}
+              >
+                公众号
+              </div>
+            </div>
+          )}
+
+          {/* 右侧微信二维码 */}
+          {qrcodes.wechat && (
+            <div 
+              className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2"
+            >
+              <div 
+                className="p-2 rounded-xl"
+                style={{ 
+                  background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)',
+                  border: `1px solid ${border}`,
+                }}
+              >
+                <img 
+                  src={qrcodes.wechat} 
+                  alt="微信" 
+                  className="w-24 h-24 md:w-28 md:h-28 object-contain"
+                />
+              </div>
+              {/* 悬浮标签 */}
+              <div 
+                className="absolute -bottom-2 -left-2 px-3 py-1 rounded-full text-xs font-medium"
+                style={{ 
+                  background: accent, 
+                  color: '#fff',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                }}
+              >
+                加好友
+              </div>
+            </div>
+          )}
+
+          {/* 中间装饰文字（如果没有二维码时显示） */}
+          {!qrcodes.wechat && !qrcodes.wechatOfficial && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div 
+                  className="text-6xl md:text-8xl mb-4"
+                  style={{ opacity: 0.1 }}
+                >
+                  {config.hero?.avatar || '🧑‍💻'}
+                </div>
+                <p style={{ color: muted }}>扫码添加微信</p>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* 底部快捷链接 */}
+        <div 
+          className="flex flex-wrap items-center justify-center gap-3 p-6"
+          style={{ borderTop: `1px solid ${border}` }}
+        >
+          {quickLinks.map((link, index) => (
+            link.url ? (
+              <a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  border: `1px solid ${border}`,
+                  color: text,
+                }}
+              >
+                {renderIcon(link.icon)}
+                <span>{link.label}</span>
+              </a>
+            ) : (
+              <div
+                key={index}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                style={{
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  border: `1px solid ${border}`,
+                  color: muted,
+                }}
+              >
+                {renderIcon(link.icon)}
+                <span>{link.label}</span>
+              </div>
+            )
+          ))}
+        </div>
       </div>
+
+      {/* ===== 社交图标行 ===== */}
+      <div className="flex items-center gap-4 mb-8">
+        {contacts.filter(c => c.enabled !== false && c.url).map((c, index) => (
+          <a
+            key={index}
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              border: `1px solid ${border}`,
+              color: muted,
+            }}
+            title={c.name}
+          >
+            {c.icon?.length <= 2 ? (
+              <span className="text-xl">{c.icon}</span>
+            ) : (
+              renderIcon(c.icon)
+            )}
+          </a>
+        ))}
+      </div>
+
+      {/* ===== 版权信息 ===== */}
+      <p className="text-xs" style={{ color: muted }}>{copyright}</p>
+
     </div>
   )
 }
