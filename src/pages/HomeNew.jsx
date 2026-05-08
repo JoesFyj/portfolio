@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // 硬编码数据（后续接后台）
 const SOCIAL_DATA = [
@@ -9,6 +9,93 @@ const SOCIAL_DATA = [
   { name: '快手', icon: '🎯', fans: '600', works: '28', color: '#FF4906' },
   { name: '公众号', icon: '📝', fans: '350', works: '15', color: '#2D6A4F' },
 ]
+
+// Hero 区作品轮播展示（右侧大图）
+function HeroWorksShowcase({ theme }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const isDark = theme === 'dark'
+  
+  // 所有作品的图片合并轮播
+  const allImages = WORKS_DATA.flatMap(work => 
+    work.images.map(img => ({ ...work, image: img }))
+  )
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % allImages.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [allImages.length])
+
+  const current = allImages[currentIndex]
+  const border = isDark ? '#30363D' : '#E8E5DF'
+  const cardBg = isDark ? '#161B22' : '#FFFFFF'
+
+  return (
+    <div 
+      className="relative rounded-2xl overflow-hidden shadow-2xl"
+      style={{ 
+        background: cardBg, 
+        border: `1px solid ${border}`,
+        boxShadow: isDark 
+          ? '0 25px 50px -12px rgba(0,0,0,0.5)' 
+          : '0 25px 50px -12px rgba(0,0,0,0.15)',
+      }}
+    >
+      {/* 图片区域 */}
+      <div className="relative aspect-[16/10] overflow-hidden">
+        {allImages.map((item, idx) => (
+          <img
+            key={`${item.id}-${idx}`}
+            src={item.image}
+            alt={item.name}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            style={{ opacity: idx === currentIndex ? 1 : 0 }}
+          />
+        ))}
+        
+        {/* 渐变遮罩 */}
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)',
+          }}
+        />
+        
+        {/* 作品信息 */}
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">{current.icon}</span>
+            <span className="text-white font-semibold text-lg">{current.name}</span>
+          </div>
+          <p className="text-white/80 text-sm mb-4">{current.desc}</p>
+          <Link
+            to="/works"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{ background: '#2D6A4F', color: '#fff' }}
+          >
+            查看全部作品 <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+      
+      {/* 指示器 */}
+      <div className="absolute top-4 right-4 flex gap-1.5">
+        {allImages.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentIndex(idx)}
+            className="w-2 h-2 rounded-full transition-all"
+            style={{ 
+              background: idx === currentIndex ? '#2D6A4F' : 'rgba(255,255,255,0.4)',
+              transform: idx === currentIndex ? 'scale(1.2)' : 'scale(1)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 // 作品轮播图组件
 function WorkCarousel({ images, theme }) {
@@ -116,66 +203,87 @@ export default function HomeNew({ theme }) {
   return (
     <div className="min-h-screen" style={{ background: bg }}>
       
-      {/* ===== Hero ===== */}
-      <section className="flex items-center" style={{ minHeight: '85dvh', paddingTop: '5rem' }}>
-        <div className="w-full max-w-5xl mx-auto px-6">
-          
-          {/* 标签 */}
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8"
-            style={{
-              background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
-              border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
-            }}
-          >
-            <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
-              从甘肃深山到职业自由的普通人
-            </span>
-          </div>
+      {/* ===== Hero - 左右布局 ===== */}
+      <section className="flex items-center" style={{ minHeight: '90dvh', paddingTop: '4rem' }}>
+        <div className="w-full max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            {/* 左侧：头像 + 介绍 */}
+            <div>
+              {/* 标签 */}
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+                style={{
+                  background: isDark ? 'rgba(45,106,79,0.15)' : 'rgba(45,106,79,0.08)',
+                  border: `1px solid ${isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)'}`,
+                }}
+              >
+                <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>
+                  从甘肃深山到职业自由的普通人
+                </span>
+              </div>
 
-          {/* 主标题 */}
-          <h1
-            className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-            style={{ color: text }}
-          >
-            少工作，多赚钱
-            <br />
-            <span style={{ color: '#2D6A4F' }}>以书为粮，以路为行</span>
-          </h1>
+              {/* 头像 */}
+              <div className="mb-6">
+                <div
+                  className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl"
+                  style={{
+                    background: isDark ? '#21262D' : '#F0EFEA',
+                    border: `3px solid ${isDark ? '#30363D' : '#E8E5DF'}`,
+                  }}
+                >
+                  🧑‍💻
+                </div>
+              </div>
 
-          {/* 一句话介绍 */}
-          <p
-            className="text-lg md:text-xl mb-10 max-w-2xl leading-relaxed"
-            style={{ color: muted }}
-          >
-            一个人 + 7个AI Agent = 24小时帮你干活
-            <br />
-            你只做决策，不干重复劳动
-          </p>
+              {/* 主标题 */}
+              <h1
+                className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4"
+                style={{ color: text }}
+              >
+                你好，我是小福
+              </h1>
 
-          {/* 三个入口 */}
-          <div className="flex flex-wrap gap-4">
-            <Link
-              to="/works"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all hover:shadow-lg"
-              style={{ background: '#2D6A4F', color: '#FFFFFF' }}
-            >
-              <Zap size={16} /> 自媒体+AI实验
-            </Link>
-            <a
-              href="#reading"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium border transition-all"
-              style={{ borderColor: border, color: muted }}
-            >
-              <BookOpen size={16} /> 读书
-            </a>
-            <a
-              href="#exercise"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium border transition-all"
-              style={{ borderColor: border, color: muted }}
-            >
-              <Activity size={16} /> 锻炼
-            </a>
+              {/* 一句话介绍 */}
+              <p
+                className="text-base md:text-lg mb-6 max-w-lg leading-relaxed"
+                style={{ color: muted }}
+              >
+                一个人 + 7个AI Agent = 24小时帮你干活
+                <br />
+                <span style={{ color: '#2D6A4F' }}>少工作，多赚钱，以书为粮，以路为行</span>
+              </p>
+
+              {/* 三个入口 */}
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/works"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all hover:shadow-lg"
+                  style={{ background: '#2D6A4F', color: '#FFFFFF' }}
+                >
+                  <Zap size={16} /> 自媒体+AI实验
+                </Link>
+                <a
+                  href="#reading"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all"
+                  style={{ borderColor: border, color: muted }}
+                >
+                  <BookOpen size={16} /> 读书
+                </a>
+                <a
+                  href="#exercise"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all"
+                  style={{ borderColor: border, color: muted }}
+                >
+                  <Activity size={16} /> 锻炼
+                </a>
+              </div>
+            </div>
+
+            {/* 右侧：作品轮播展示 */}
+            <div className="hidden lg:block">
+              <HeroWorksShowcase theme={theme} />
+            </div>
           </div>
         </div>
       </section>
