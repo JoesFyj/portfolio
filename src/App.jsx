@@ -5,8 +5,7 @@ import DynamicBg from './components/DynamicBg'
 import HomeNew from './pages/HomeNew'
 import Works from './pages/Works'
 import Journey from './pages/Journey'
-import PageGenerator from './pages/PageGenerator'
-import VideoGenPage from './pages/VideoGenPage'
+
 import ContentOps from './pages/ContentOps'
 import AdminDashboardNew from './components/AdminDashboardNew'
 
@@ -64,9 +63,7 @@ export default function App() {
           <Route path="/" element={<HomeNew lang={lang} theme={theme} />} />
           <Route path="/works" element={<Works lang={lang} theme={theme} />} />
           <Route path="/journey" element={<Journey lang={lang} theme={theme} />} />
-          {/* Tools - keep existing */}
-          <Route path="/gen" element={<PageGenerator />} />
-          <Route path="/vgen" element={<VideoGenPage />} />
+          {/* Content Ops */}
           <Route path="/content-ops" element={<ContentOps theme={theme} />} />
           {/* Legacy routes */}
           <Route path="/hub" element={<Hub lang={lang} theme={theme} />} />

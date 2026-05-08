@@ -176,12 +176,14 @@ export default function HomeNew({ theme }) {
             最近在做什么
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link
-              to="/works"
-              className="rounded-2xl p-6 transition-all hover:shadow-lg group"
+            <a
+              href="https://40cb5522c78940d6856379baab1876af.prod.enter.pro/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-2xl p-6 transition-all hover:shadow-lg group block"
               style={{ background: cardBg, border: `1px solid ${border}` }}
             >
-              <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>🛠️ 最新作品</span>
+              <span className="text-sm font-medium" style={{ color: '#2D6A4F' }}>🛠️ 工具集</span>
               <h3 className="font-serif text-xl font-bold mt-2 mb-2 group-hover:text-[#2D6A4F] transition-colors" style={{ color: text }}>
                 VideoGenerator V2
               </h3>
@@ -189,9 +191,9 @@ export default function HomeNew({ theme }) {
                 动画视频自动生成引擎，5套风格预设，一键生成抖音口播视频
               </p>
               <span className="inline-flex items-center gap-1 mt-4 text-sm" style={{ color: '#2D6A4F' }}>
-                查看作品 <ArrowRight size={14} />
+                前往使用 <ArrowRight size={14} />
               </span>
-            </Link>
+            </a>
 
             <Link
               to="/journey"
