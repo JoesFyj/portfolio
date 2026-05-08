@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BookOpen, Activity, Zap } from 'lucide-react'
+import { ArrowRight, BookOpen, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 
 // 硬编码数据（后续接后台）
 const SOCIAL_DATA = [
@@ -9,6 +10,53 @@ const SOCIAL_DATA = [
   { name: '公众号', icon: '📝', fans: '350', works: '15', color: '#2D6A4F' },
 ]
 
+// 作品轮播图组件
+function WorkCarousel({ images, theme }) {
+  const [current, setCurrent] = useState(0)
+  const isDark = theme === 'dark'
+  
+  const next = () => setCurrent((c) => (c + 1) % images.length)
+  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length)
+
+  return (
+    <div className="relative w-full aspect-video rounded-lg overflow-hidden mb-4 group">
+      <img
+        src={images[current]}
+        alt={`截图 ${current + 1}`}
+        className="w-full h-full object-cover"
+      />
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); prev() }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); next() }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'rgba(0,0,0,0.5)', color: '#fff' }}
+          >
+            <ChevronRight size={18} />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrent(i) }}
+                className="w-1.5 h-1.5 rounded-full transition-all"
+                style={{ background: i === current ? '#fff' : 'rgba(255,255,255,0.5)' }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 const WORKS_DATA = [
   {
     id: 1,
@@ -17,6 +65,11 @@ const WORKS_DATA = [
     icon: '🤖',
     color: '#6366F1',
     url: '/works',
+    images: [
+      'https://placehold.co/600x340/6366F1/ffffff?text=Agent+Dashboard',
+      'https://placehold.co/600x340/4F46E5/ffffff?text=Content+Flow',
+      'https://placehold.co/600x340/4338CA/ffffff?text=Analytics',
+    ],
   },
   {
     id: 2,
@@ -26,6 +79,11 @@ const WORKS_DATA = [
     color: '#2D6A4F',
     url: 'https://40cb5522c78940d6856379baab1876af.prod.enter.pro/',
     external: true,
+    images: [
+      'https://placehold.co/600x340/2D6A4F/ffffff?text=Video+Editor',
+      'https://placehold.co/600x340/1B4332/ffffff?text=Style+Presets',
+      'https://placehold.co/600x340/40916C/ffffff?text=Export+Panel',
+    ],
   },
 ]
 
@@ -155,48 +213,56 @@ export default function HomeNew({ theme }) {
           </div>
 
           {/* 作品集预览 */}
-          <h3 className="font-semibold text-lg mb-4" style={{ color: text }}>作品</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg" style={{ color: text }}>作品</h3>
+            <Link
+              to="/works"
+              className="text-sm font-medium flex items-center gap-1"
+              style={{ color: '#2D6A4F' }}
+            >
+              查看更多 <ArrowRight size={14} />
+            </Link>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {WORKS_DATA.map(work => (
-              work.external ? (
-                <a
-                  key={work.id}
-                  href={work.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl p-6 transition-all hover:shadow-lg group block"
-                  style={{ background: cardBg, border: `1px solid ${border}` }}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">{work.icon}</span>
-                    <h4 className="font-semibold text-lg group-hover:text-[#2D6A4F] transition-colors" style={{ color: text }}>
-                      {work.name}
-                    </h4>
-                  </div>
-                  <p className="text-sm" style={{ color: muted }}>{work.desc}</p>
-                  <span className="inline-flex items-center gap-1 mt-4 text-sm" style={{ color: work.color }}>
+              <div
+                key={work.id}
+                className="rounded-xl p-4 transition-all hover:shadow-lg group"
+                style={{ background: cardBg, border: `1px solid ${border}` }}
+              >
+                {/* 封面轮播 */}
+                <WorkCarousel images={work.images} theme={theme} />
+
+                {/* 作品信息 */}
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">{work.icon}</span>
+                  <h4 className="font-semibold text-lg" style={{ color: text }}>
+                    {work.name}
+                  </h4>
+                </div>
+                <p className="text-sm mb-3" style={{ color: muted }}>{work.desc}</p>
+
+                {/* 按钮 */}
+                {work.external ? (
+                  <a
+                    href={work.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
+                    style={{ color: work.color }}
+                  >
                     前往使用 <ArrowRight size={14} />
-                  </span>
-                </a>
-              ) : (
-                <Link
-                  key={work.id}
-                  to={work.url}
-                  className="rounded-xl p-6 transition-all hover:shadow-lg group"
-                  style={{ background: cardBg, border: `1px solid ${border}` }}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">{work.icon}</span>
-                    <h4 className="font-semibold text-lg group-hover:text-[#2D6A4F] transition-colors" style={{ color: text }}>
-                      {work.name}
-                    </h4>
-                  </div>
-                  <p className="text-sm" style={{ color: muted }}>{work.desc}</p>
-                  <span className="inline-flex items-center gap-1 mt-4 text-sm" style={{ color: work.color }}>
+                  </a>
+                ) : (
+                  <Link
+                    to={work.url}
+                    className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
+                    style={{ color: work.color }}
+                  >
                     查看详情 <ArrowRight size={14} />
-                  </span>
-                </Link>
-              )
+                  </Link>
+                )}
+              </div>
             ))}
           </div>
         </div>
