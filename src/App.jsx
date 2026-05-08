@@ -8,6 +8,7 @@ import Works from './pages/Works'
 import Connect from './pages/Connect'
 import Reading from './pages/Reading'
 import Exercise from './pages/Exercise'
+import Admin from './pages/Admin'
 import AdminDashboardNew from './components/AdminDashboardNew'
 
 // Legacy pages (kept for backward compatibility, accessible via direct URL)
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/connect" element={<Connect theme={theme} />} />
           <Route path="/reading" element={<Reading theme={theme} />} />
           <Route path="/exercise" element={<Exercise theme={theme} />} />
+          <Route path="/admin" element={<Admin theme={theme} />} />
           {/* Legacy routes */}
           <Route path="/journey" element={<Journey theme={theme} />} />
           <Route path="/content-ops" element={<ContentOps theme={theme} />} />
