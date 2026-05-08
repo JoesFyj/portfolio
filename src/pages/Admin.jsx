@@ -711,6 +711,250 @@ export default function Admin({ theme }) {
             </ModuleSection>
           )}
 
+          {/* 关于模块配置 */}
+          {activeModule === 'about' && (
+            <ModuleSection title="关于我配置" description="联系页面布局与内容">
+              <FormGroup label="启用模块">
+                <Toggle 
+                  checked={config.about?.enabled !== false} 
+                  onChange={() => updateField('about', 'enabled', !config.about?.enabled)}
+                />
+              </FormGroup>
+              
+              <FormGroup label="标语">
+                <input
+                  type="text"
+                  value={config.about?.tagline || '热爱 · 创造 · 分享'}
+                  onChange={(e) => updateField('about', 'tagline', e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="个人简介">
+                <textarea
+                  value={config.about?.bio || ''}
+                  onChange={(e) => updateField('about', 'bio', e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="邮箱">
+                <input
+                  type="email"
+                  value={config.about?.email || ''}
+                  onChange={(e) => updateField('about', 'email', e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="位置">
+                <input
+                  type="text"
+                  value={config.about?.location || ''}
+                  onChange={(e) => updateField('about', 'location', e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <FormGroup label="版权信息">
+                <input
+                  type="text"
+                  value={config.about?.copyright || ''}
+                  onChange={(e) => updateField('about', 'copyright', e.target.value)}
+                  placeholder={`© ${new Date().getFullYear()} 小福. All rights reserved.`}
+                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: border, background: cardBg, color: text }}
+                />
+              </FormGroup>
+              
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>快速导航</h4>
+                  <button
+                    onClick={() => {
+                      const newLinks = [...(config.about?.navLinks || [])]
+                      newLinks.push({ label: '新页面', to: '/' })
+                      updateField('about', 'navLinks', newLinks)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
+                    style={{ borderColor: border, color: muted }}
+                  >
+                    <Plus size={14} /> 添加
+                  </button>
+                </div>
+                
+                {(config.about?.navLinks || []).map((link, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={link.label}
+                      onChange={(e) => {
+                        const newLinks = [...(config.about?.navLinks || [])]
+                        newLinks[index].label = e.target.value
+                        updateField('about', 'navLinks', newLinks)
+                      }}
+                      placeholder="标签"
+                      className="flex-1 px-3 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="text"
+                      value={link.to}
+                      onChange={(e) => {
+                        const newLinks = [...(config.about?.navLinks || [])]
+                        newLinks[index].to = e.target.value
+                        updateField('about', 'navLinks', newLinks)
+                      }}
+                      placeholder="链接"
+                      className="flex-1 px-3 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <button
+                      onClick={() => {
+                        const newLinks = (config.about?.navLinks || []).filter((_, i) => i !== index)
+                        updateField('about', 'navLinks', newLinks)
+                      }}
+                      className="p-2 rounded hover:bg-red-500/10"
+                      style={{ color: '#EF4444' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>技能标签</h4>
+                  <button
+                    onClick={() => {
+                      const newSkills = [...(config.about?.skills || [])]
+                      newSkills.push('新技能')
+                      updateField('about', 'skills', newSkills)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
+                    style={{ borderColor: border, color: muted }}
+                  >
+                    <Plus size={14} /> 添加
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {(config.about?.skills || []).map((skill, index) => (
+                    <div key={index} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    >
+                      <input
+                        type="text"
+                        value={skill}
+                        onChange={(e) => {
+                          const newSkills = [...(config.about?.skills || [])]
+                          newSkills[index] = e.target.value
+                          updateField('about', 'skills', newSkills)
+                        }}
+                        className="bg-transparent outline-none w-20 text-center"
+                      />
+                      <button
+                        onClick={() => {
+                          const newSkills = (config.about?.skills || []).filter((_, i) => i !== index)
+                          updateField('about', 'skills', newSkills)
+                        }}
+                        className="ml-1 text-xs hover:text-red-500"
+                        style={{ color: muted }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>社交图标</h4>
+                  <button
+                    onClick={() => {
+                      const newContacts = [...(config.about?.contacts || [])]
+                      newContacts.push({ name: '新平台', icon: '🔗', url: '', enabled: true })
+                      updateField('about', 'contacts', newContacts)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
+                    style={{ borderColor: border, color: muted }}
+                  >
+                    <Plus size={14} /> 添加
+                  </button>
+                </div>
+                
+                {(config.about?.contacts || []).map((contact, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={contact.icon}
+                      onChange={(e) => {
+                        const newContacts = [...(config.about?.contacts || [])]
+                        newContacts[index].icon = e.target.value
+                        updateField('about', 'contacts', newContacts)
+                      }}
+                      placeholder="图标"
+                      className="w-14 px-2 py-2 rounded border text-sm text-center"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="text"
+                      value={contact.name}
+                      onChange={(e) => {
+                        const newContacts = [...(config.about?.contacts || [])]
+                        newContacts[index].name = e.target.value
+                        updateField('about', 'contacts', newContacts)
+                      }}
+                      placeholder="名称"
+                      className="flex-1 px-3 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="text"
+                      value={contact.url || ''}
+                      onChange={(e) => {
+                        const newContacts = [...(config.about?.contacts || [])]
+                        newContacts[index].url = e.target.value || null
+                        updateField('about', 'contacts', newContacts)
+                      }}
+                      placeholder="链接"
+                      className="flex-1 px-3 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <button
+                      onClick={() => {
+                        const newContacts = [...(config.about?.contacts || [])]
+                        newContacts[index].enabled = !newContacts[index].enabled
+                        updateField('about', 'contacts', newContacts)
+                      }}
+                      className="p-2 rounded"
+                      style={{ color: contact.enabled !== false ? accent : muted }}
+                    >
+                      {contact.enabled !== false ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newContacts = (config.about?.contacts || []).filter((_, i) => i !== index)
+                        updateField('about', 'contacts', newContacts)
+                      }}
+                      className="p-2 rounded hover:bg-red-500/10"
+                      style={{ color: '#EF4444' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </ModuleSection>
+          )}
+
           {/* 主题配置 */}
           {activeModule === 'theme' && (
             <ModuleSection title="主题设置" description="外观与配色">

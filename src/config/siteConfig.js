@@ -191,12 +191,25 @@ const DEFAULT_CONFIG = {
   about: {
     enabled: true,
     title: '关于我',
-    paragraphs: [
-      '我是小福，甘肃深山出来的普通人。',
-      '爷爷挖药给孙子攒娶媳妇的钱，到走都没看到孙子娶上媳妇。母亲不识字，照顾瘫痪爷爷三十年。',
-      '我靠读书走出大山，现在用AI给自己造一条自由的路。',
+    // 页面左侧个人信息
+    tagline: '热爱 · 创造 · 分享',
+    bio: '专注于 AI 自由实验与内容创作，致力于用技术放大个人产出，一个人干出一个小团队的量。',
+    // 右侧快速导航
+    navLinks: [
+      { label: '首页', to: '/' },
+      { label: '作品', to: '/works' },
+      { label: '读书', to: '/#reading' },
+      { label: '跑步', to: '/#exercise' },
     ],
+    // 技能标签
+    skills: ['AI', 'React', '内容创作', '自媒体运营', 'Python', 'Prompt Engineering'],
+    // 联系方式
+    email: 'xiaofu@example.com',
+    location: '中国 · 甘肃',
+    copyright: '',
+    // 社交图标（用于左下角图标行）
     contacts: [
+      { name: 'GitHub', icon: '🐙', url: 'https://github.com/xiaofu', enabled: true },
       { name: '推特', icon: '𝕏', url: 'https://twitter.com/xiaofu', enabled: true },
       { name: '抖音', icon: '📱', url: 'https://douyin.com/user/xiaofu', enabled: true },
       { name: '邮箱', icon: '✉️', url: 'mailto:xiaofu@example.com', enabled: true },
