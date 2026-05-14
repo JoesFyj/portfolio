@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { getConfig } from '../config/siteConfig'
+import ChinaMapTrajectory from '../components/ChinaMapTrajectory'
 
 // 从配置中心获取数据
 function useSiteConfig() {
@@ -101,6 +102,117 @@ function HeroWorksShowcase({ works, theme }) {
             }}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+// 年度阅读进度图组件
+function ReadingProgressChart({ config, theme }) {
+  const isDark = theme === 'dark'
+  const accent = config.theme?.primaryColor || '#2D6A4F'
+  const text = isDark ? '#E6EDF3' : '#1C1C1E'
+  const muted = isDark ? '#8B949E' : '#6B6860'
+  const border = isDark ? '#30363D' : '#E8E5DF'
+  
+  const overview = config.reading?.overview || {}
+  const target = overview.target || 24
+  const total = overview.total || 0
+  const progress = Math.round((total / target) * 100)
+  
+  // 计算每月的阅读分布（模拟数据）
+  const monthlyData = [
+    { month: '1月', books: 1 },
+    { month: '2月', books: 2 },
+    { month: '3月', books: 1 },
+    { month: '4月', books: 3 },
+    { month: '5月', books: 2 },
+    { month: '6月', books: 3 },
+  ]
+  
+  const maxBooks = Math.max(...monthlyData.map(d => d.books), 1)
+  
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ background: isDark ? '#161B22' : '#FFFFFF', border: `1px solid ${border}` }}>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-semibold text-lg" style={{ color: text }}>2026 阅读进度</h3>
+          <div className="text-right">
+            <div className="text-2xl font-bold" style={{ color: accent }}>{total}</div>
+            <div className="text-xs" style={{ color: muted }}>/ {target} 本</div>
+          </div>
+        </div>
+        
+        {/* 环形进度图 */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="relative">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              {/* 背景圆环 */}
+              <circle
+                cx="70"
+                cy="70"
+                r="58"
+                fill="none"
+                stroke={isDark ? '#21262D' : '#E8E5DF'}
+                strokeWidth="12"
+              />
+              {/* 进度圆环 */}
+              <circle
+                cx="70"
+                cy="70"
+                r="58"
+                fill="none"
+                stroke={accent}
+                strokeWidth="12"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 58}`}
+                strokeDashoffset={`${2 * Math.PI * 58 * (1 - progress / 100)}`}
+                transform="rotate(-90 70 70)"
+                style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-3xl font-bold" style={{ color: text }}>{progress}%</div>
+              <div className="text-xs" style={{ color: muted }}>完成</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* 月度柱状图 */}
+        <div className="mb-4">
+          <div className="text-xs font-medium mb-3" style={{ color: muted }}>月度阅读分布</div>
+          <div className="flex items-end justify-between gap-2 h-20">
+            {monthlyData.map((item, idx) => (
+              <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                <div 
+                  className="w-full rounded-t transition-all hover:opacity-80"
+                  style={{ 
+                    height: `${(item.books / maxBooks) * 60}px`,
+                    background: accent,
+                    minHeight: '4px',
+                  }}
+                />
+                <div className="text-xs" style={{ color: muted }}>{item.month}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* 统计数据 */}
+        <div className="grid grid-cols-3 gap-4 pt-4" style={{ borderTop: `1px solid ${border}` }}>
+          <div className="text-center">
+            <div className="text-lg font-bold" style={{ color: text }}>{overview.pages || 0}</div>
+            <div className="text-xs" style={{ color: muted }}>累计页数</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold" style={{ color: text }}>{overview.hours || 0}h</div>
+            <div className="text-xs" style={{ color: muted }}>阅读时长</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold" style={{ color: text }}>{overview.streak || 0}</div>
+            <div className="text-xs" style={{ color: muted }}>连续阅读</div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -413,13 +525,8 @@ export default function HomeNew({ theme }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {exerciseConfig.trajectory?.enabled !== false && (
                 <div className="rounded-xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="relative aspect-[4/3]">
-                    <img src={exerciseConfig.trajectory.image} alt="跑步轨迹" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 40%)' }} />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="text-white font-medium mb-1">{exerciseConfig.trajectory.title}</div>
-                      <div className="text-white/70 text-sm">{exerciseConfig.trajectory.subtitle}</div>
-                    </div>
+                  <div>  
+                    <ChinaMapTrajectory theme={theme} />
                   </div>
                   <div className="p-4">
                     <p className="text-sm" style={{ color: muted }}>{exerciseConfig.trajectory.description}</p>

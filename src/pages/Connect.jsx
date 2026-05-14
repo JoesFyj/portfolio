@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mail, MapPin, Github, Twitter, ExternalLink, Send, MessageCircle, BookOpen } from 'lucide-react'
+import { Mail, MapPin, ExternalLink, Send, MessageCircle, BookOpen, AtSign, Globe } from 'lucide-react'
 import { getConfig } from '../config/siteConfig'
 
 export default function Connect({ theme }) {
@@ -40,8 +40,8 @@ export default function Connect({ theme }) {
 
   const renderIcon = (type) => {
     switch (type) {
-      case 'twitter': return <Twitter size={16} />
-      case 'github': return <Github size={16} />
+      case 'twitter': return <AtSign size={16} />
+      case 'github': return <Globe size={16} />
       case 'mail': return <Mail size={16} />
       case 'send': return <Send size={16} />
       case 'message': return <MessageCircle size={16} />
