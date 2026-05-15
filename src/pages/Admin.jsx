@@ -400,13 +400,14 @@ export default function Admin({ theme }) {
                 />
               </FormGroup>
               
-              <FormGroup label="标题">
+              <FormGroup label="副标题">
                 <input
                   type="text"
-                  value={config.works?.title || '作品展示'}
-                  onChange={(e) => updateField('works', 'title', e.target.value)}
+                  value={config.works?.subtitle || ''}
+                  onChange={(e) => updateField('works', 'subtitle', e.target.value)}
                   className="w-full px-4 py-2 rounded-lg border text-sm"
                   style={{ borderColor: border, background: cardBg, color: text }}
+                  placeholder="用 AI 放大个人产出..."
                 />
               </FormGroup>
               
@@ -417,12 +418,101 @@ export default function Admin({ theme }) {
                 />
               </FormGroup>
               
+              {/* 分类管理 */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>项目分类</h4>
+                  <button
+                    onClick={() => {
+                      const newCategories = [...(config.works?.categories || [])]
+                      newCategories.push({
+                        id: `cat-${Date.now()}`,
+                        name: '新分类',
+                        icon: 'folder',
+                        enabled: true,
+                      })
+                      updateField('works', 'categories', newCategories)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-all"
+                    style={{ borderColor: border, color: muted }}
+                  >
+                    <Plus size={14} /> 添加分类
+                  </button>
+                </div>
+                
+                {(config.works?.categories || []).map((cat, index) => (
+                  <div key={cat.id} className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={cat.name}
+                      onChange={(e) => {
+                        const newCategories = [...(config.works?.categories || [])]
+                        newCategories[index].name = e.target.value
+                        updateField('works', 'categories', newCategories)
+                      }}
+                      placeholder="分类名称"
+                      className="flex-1 px-3 py-2 rounded border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <button
+                      onClick={() => {
+                        const newCategories = (config.works?.categories || []).filter((_, i) => i !== index)
+                        updateField('works', 'categories', newCategories)
+                      }}
+                      className="p-2 rounded hover:bg-red-500/10"
+                      style={{ color: '#EF4444' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 合作区域 */}
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <h4 className="text-sm font-medium mb-4" style={{ color: text }}>开放合作区域</h4>
+                <FormGroup label="启用">
+                  <Toggle 
+                    checked={config.works?.collaboration?.enabled !== false} 
+                    onChange={() => updateNestedField('works', 'collaboration.enabled', !config.works?.collaboration?.enabled)}
+                  />
+                </FormGroup>
+                <FormGroup label="标题">
+                  <input
+                    type="text"
+                    value={config.works?.collaboration?.title || ''}
+                    onChange={(e) => updateNestedField('works', 'collaboration.title', e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border text-sm"
+                    style={{ borderColor: border, background: cardBg, color: text }}
+                  />
+                </FormGroup>
+                <FormGroup label="副标题">
+                  <input
+                    type="text"
+                    value={config.works?.collaboration?.subtitle || ''}
+                    onChange={(e) => updateNestedField('works', 'collaboration.subtitle', e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border text-sm"
+                    style={{ borderColor: border, background: cardBg, color: text }}
+                  />
+                </FormGroup>
+                <FormGroup label="按钮文字">
+                  <input
+                    type="text"
+                    value={config.works?.collaboration?.buttonText || ''}
+                    onChange={(e) => updateNestedField('works', 'collaboration.buttonText', e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border text-sm"
+                    style={{ borderColor: border, background: cardBg, color: text }}
+                  />
+                </FormGroup>
+              </div>
+              
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-medium" style={{ color: text }}>作品列表</h4>
                   <button
                     onClick={() => {
                       const newItems = [...(config.works?.items || [])]
+                      const defaultCategory = config.works?.categories?.[0]?.id || 'all'
                       newItems.push({
                         id: Date.now(),
                         name: '新作品',
@@ -432,6 +522,8 @@ export default function Admin({ theme }) {
                         url: '/works',
                         images: [],
                         enabled: true,
+                        category: defaultCategory,
+                        features: [],
                       })
                       updateField('works', 'items', newItems)
                     }}
@@ -482,6 +574,38 @@ export default function Admin({ theme }) {
                           newItems[index].desc = e.target.value
                           updateField('works', 'items', newItems)
                         }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+                    
+                    <FormGroup label="分类">
+                      <select
+                        value={work.category || 'all'}
+                        onChange={(e) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].category = e.target.value
+                          updateField('works', 'items', newItems)
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      >
+                        {(config.works?.categories || []).map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </FormGroup>
+                    
+                    <FormGroup label="技术标签（逗号分隔）">
+                      <input
+                        type="text"
+                        value={(work.features || []).join(', ')}
+                        onChange={(e) => {
+                          const newItems = [...(config.works?.items || [])]
+                          newItems[index].features = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                          updateField('works', 'items', newItems)
+                        }}
+                        placeholder="React, Supabase, AI评审"
                         className="w-full px-4 py-2 rounded-lg border text-sm"
                         style={{ borderColor: border, background: cardBg, color: text }}
                       />

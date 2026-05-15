@@ -34,8 +34,24 @@ const DEFAULT_CONFIG = {
   // ===== 作品展示配置 =====
   works: {
     enabled: true,
-    title: '作品',
+    title: '作品集',
+    subtitle: '用 AI 放大个人产出，一个人干出一个小团队的量',
     showOnHero: true,
+    // 项目分类（用于左侧筛选）
+    categories: [
+      { id: 'all', name: '全部作品', icon: 'grid', enabled: true },
+      { id: 'ai-tools', name: 'AI 工具', icon: 'zap', enabled: true },
+      { id: 'content', name: '内容创作', icon: 'pen', enabled: true },
+      { id: 'automation', name: '自动化', icon: 'settings', enabled: true },
+    ],
+    // 开放合作区域
+    collaboration: {
+      enabled: true,
+      title: '开放合作中',
+      subtitle: '寻求 AI 产品开发与出海合作',
+      buttonText: '联系我',
+      buttonLink: '/connect',
+    },
     items: [
       {
         id: 1,
@@ -46,6 +62,8 @@ const DEFAULT_CONFIG = {
         url: '/works',
         external: false,
         enabled: true,
+        category: 'automation',
+        features: ['React', 'Supabase', 'AI评审'],
         images: [
           'https://placehold.co/600x340/6366F1/ffffff?text=Agent+Dashboard',
           'https://placehold.co/600x340/4F46E5/ffffff?text=Content+Flow',
@@ -61,6 +79,8 @@ const DEFAULT_CONFIG = {
         url: 'https://40cb5522c78940d6856379baab1876af.prod.enter.pro/',
         external: true,
         enabled: true,
+        category: 'ai-tools',
+        features: ['Next.js', 'FastAPI', 'LangGraph'],
         images: [
           'https://placehold.co/600x340/2D6A4F/ffffff?text=Video+Editor',
           'https://placehold.co/600x340/1B4332/ffffff?text=Style+Presets',
