@@ -48,7 +48,6 @@ export default function Nav({ theme, onThemeToggle, onAdminClick }) {
   const links = [
     { to: '/',      label: '首页' },
     { to: '/works', label: '作品' },
-    { to: '/connect', label: '联系' },
   ]
 
   return (

@@ -563,32 +563,115 @@ export default function HomeNew({ theme }) {
         </section>
       )}
 
-      {/* ===== 关于我 ===== */}
+      {/* ===== 联系我 ===== */}
       {aboutConfig.enabled !== false && (
-        <section className="py-20 px-6">
+        <section className="py-20 px-6" style={{ background: isDark ? '#161B22' : '#F8F7F4' }}>
           <div className="max-w-3xl mx-auto">
-            <h2 className="font-serif text-3xl font-bold mb-6" style={{ color: text }}>{aboutConfig.title}</h2>
-            <div className="rounded-xl p-8 mb-8" style={{ background: cardBg, border: `1px solid ${border}` }}>
-              {(aboutConfig.paragraphs || []).map((p, idx) => (
-                <p key={idx} className="text-base leading-relaxed mb-6 last:mb-0" style={{ color: muted }}>{p}</p>
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="w-2 h-2 rounded-full" style={{ background: accent }} />
+                <h2 className="text-3xl md:text-4xl font-bold tracking-wider" style={{ color: accent }}>联系我</h2>
+                <span className="w-2 h-2 rounded-full" style={{ background: accent }} />
+              </div>
+              <p className="text-base" style={{ color: muted }}>选择你喜欢的方式，随时找我聊聊</p>
+            </div>
+
+            {/* 二维码卡片 */}
+            <div
+              className="w-full rounded-2xl overflow-hidden mb-8"
+              style={{
+                background: cardBg,
+                border: `1px solid ${border}`,
+                boxShadow: isDark ? '0 25px 50px -12px rgba(0,0,0,0.5)' : '0 25px 50px -12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div
+                className="relative h-64 md:h-72"
+                style={{
+                  background: aboutConfig.heroImage
+                    ? `url(${aboutConfig.heroImage}) center/cover`
+                    : `linear-gradient(135deg, ${accent}15 0%, ${accent}05 50%, ${isDark ? '#161B22' : '#FFFFFF'} 100%)`,
+                }}
+              >
+                {/* 装饰网格 */}
+                <div
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    backgroundImage: `linear-gradient(${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'} 1px, transparent 1px)`,
+                    backgroundSize: '40px 40px',
+                  }}
+                />
+
+                {/* 左侧公众号二维码 */}
+                {(aboutConfig.qrcodes?.wechatOfficial) && (
+                  <div className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2">
+                    <div className="p-2 rounded-xl" style={{ background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)', border: `1px solid ${border}` }}>
+                      <img src={aboutConfig.qrcodes.wechatOfficial} alt="公众号" className="w-24 h-24 md:w-28 md:h-28 object-contain" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 px-3 py-1 rounded-full text-xs font-medium" style={{ background: accent, color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                      公众号
+                    </div>
+                  </div>
+                )}
+
+                {/* 右侧微信二维码 */}
+                {(aboutConfig.qrcodes?.wechat) && (
+                  <div className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2">
+                    <div className="p-2 rounded-xl" style={{ background: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)', border: `1px solid ${border}` }}>
+                      <img src={aboutConfig.qrcodes.wechat} alt="微信" className="w-24 h-24 md:w-28 md:h-28 object-contain" />
+                    </div>
+                    <div className="absolute -bottom-2 -left-2 px-3 py-1 rounded-full text-xs font-medium" style={{ background: accent, color: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                      加好友
+                    </div>
+                  </div>
+                )}
+
+                {/* 无二维码时占位 */}
+                {!aboutConfig.qrcodes?.wechat && !aboutConfig.qrcodes?.wechatOfficial && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-6xl md:text-7xl mb-3" style={{ opacity: 0.08 }}>{heroConfig.avatar || '🧑‍💻'}</div>
+                      <p style={{ color: muted }}>扫码添加微信</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 底部快捷链接 */}
+              <div className="flex flex-wrap items-center justify-center gap-3 p-6" style={{ borderTop: `1px solid ${border}` }}>
+                {(aboutConfig.quickLinks || []).map((link, index) => (
+                  link.url ? (
+                    <a key={index} href={link.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105"
+                      style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', border: `1px solid ${border}`, color: text }}>
+                      <span>{link.icon === 'feishu' ? '📚' : link.icon === 'twitter' ? '🐦' : link.icon === 'github' ? '🔗' : link.icon === 'location' ? '📍' : '🔗'}</span>
+                      <span>{link.label}</span>
+                    </a>
+                  ) : (
+                    <span key={index} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium"
+                      style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', border: `1px solid ${border}`, color: muted }}>
+                      <span>📍</span>
+                      <span>{link.label}</span>
+                    </span>
+                  )
+                ))}
+              </div>
+            </div>
+
+            {/* 社交图标行 */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              {(aboutConfig.contacts || []).filter(c => c.enabled !== false && c.url).map((c, index) => (
+                <a key={index} href={c.url} target="_blank" rel="noopener noreferrer"
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                  style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', border: `1px solid ${border}`, color: muted }}
+                  title={c.name}>
+                  <span className="text-xl">{c.icon?.length <= 2 ? c.icon : c.name[0]}</span>
+                </a>
               ))}
             </div>
-            <div className="flex flex-wrap gap-4">
-              {(aboutConfig.contacts || []).filter(c => c.enabled !== false).map(contact => (
-                contact.url ? (
-                  <a key={contact.name} href={contact.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border transition-all hover:shadow-md"
-                    style={{ borderColor: border, color: muted }}>
-                    <span>{contact.icon}</span> {contact.name}
-                  </a>
-                ) : (
-                  <span key={contact.name} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border"
-                    style={{ borderColor: border, color: muted }}>
-                    <span>{contact.icon}</span> {contact.name}：{contact.value}
-                  </span>
-                )
-              ))}
-            </div>
+
+            {/* 版权信息 */}
+            <p className="text-xs text-center" style={{ color: muted }}>{aboutConfig.copyright || `© ${new Date().getFullYear()} ${heroConfig.name || '小福'}. All rights reserved.`}</p>
           </div>
         </section>
       )}
