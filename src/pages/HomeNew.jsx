@@ -297,9 +297,13 @@ export default function HomeNew({ theme }) {
                   <span className="text-sm font-medium" style={{ color: accent }}>{heroConfig.tag}</span>
                 </div>
                 <div className="mb-6">
-                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl"
+                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center overflow-hidden"
                     style={{ background: isDark ? '#21262D' : '#F0EFEA', border: `3px solid ${border}` }}>
-                    {heroConfig.avatar}
+                    {heroConfig.avatar ? (
+                      <img src={heroConfig.avatar} alt="头像" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-4xl">🧑‍💻</span>
+                    )}
                   </div>
                 </div>
                 <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4" style={{ color: text }}>
@@ -630,7 +634,7 @@ export default function HomeNew({ theme }) {
                 {!aboutConfig.qrcodes?.wechat && !aboutConfig.qrcodes?.wechatOfficial && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-6xl md:text-7xl mb-3" style={{ opacity: 0.08 }}>{heroConfig.avatar || '🧑‍💻'}</div>
+                      <div className="text-6xl md:text-7xl mb-3" style={{ opacity: 0.08 }}>🧑‍💻</div>
                       <p style={{ color: muted }}>扫码添加微信</p>
                     </div>
                   </div>
