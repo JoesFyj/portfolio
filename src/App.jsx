@@ -5,6 +5,7 @@ import DynamicBg from './components/DynamicBg'
 import AIAssistant from './components/AIAssistant'
 import HomeNew from './pages/HomeNew'
 import Works from './pages/Works'
+import WorkDetail from './pages/WorkDetail'
 import Connect from './pages/Connect'
 import Reading from './pages/Reading'
 import Exercise from './pages/Exercise'
@@ -52,6 +53,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomeNew theme={theme} />} />
           <Route path="/works" element={<Works theme={theme} />} />
+          <Route path="/works/:id" element={<WorkDetail theme={theme} />} />
           <Route path="/connect" element={<Connect theme={theme} />} />
           <Route path="/reading" element={<Reading theme={theme} />} />
           <Route path="/exercise" element={<Exercise theme={theme} />} />

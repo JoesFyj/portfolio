@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { 
   ArrowRight, ExternalLink, ChevronLeft, Search, 
-  Grid3X3, Zap, PenTool, Settings, Plus
+  Grid3X3, Zap, PenTool, Settings, Plus, Eye
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { getConfig } from '../config/siteConfig'
@@ -99,11 +99,11 @@ function WorkCard({ work, theme }) {
             </a>
           ) : (
             <Link 
-              to={work.url}
+              to={`/works/${work.id}`}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:shadow-md"
               style={{ background: work.color, color: '#fff' }}
             >
-              查看详情 <ArrowRight size={14} />
+              查看详情 <Eye size={14} />
             </Link>
           )}
         </div>

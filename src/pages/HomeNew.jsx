@@ -386,7 +386,7 @@ export default function HomeNew({ theme }) {
                           className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
                           style={{ color: work.color }}>前往使用 <ArrowRight size={14} /></a>
                       ) : (
-                        <Link to={work.url}
+                        <Link to={`/works/${work.id}`}
                           className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-70"
                           style={{ color: work.color }}>查看详情 <ArrowRight size={14} /></Link>
                       )}
