@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { getConfig } from '../config/siteConfig'
+import { getConfig, saveConfig } from '../config/siteConfig'
 import ChinaMapTrajectory from '../components/ChinaMapTrajectory'
+import AIWriter from '../components/AIWriter'
 
 export default function Exercise({ theme }) {
   const isDark = theme === 'dark'
@@ -37,6 +38,7 @@ export default function Exercise({ theme }) {
   const currentData = allRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const totalDistance = allRecords.reduce((sum, e) => sum + (e.distance || 0), 0)
+  const [aiWriting, setAiWriting] = useState(null)
 
   return (
     <div className="min-h-screen" style={{ background: bg }}>
@@ -148,14 +150,42 @@ export default function Exercise({ theme }) {
                     <span className="text-xs" style={{ color: muted }}>
                       {record.duration} · 配速 {record.pace}
                     </span>
-                    {record.articleUrl && (
-                      <Link to={record.articleUrl}
-                        className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: accent }}>
-                        查看记录 <ChevronRight size={12} />
-                      </Link>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {record.articleUrl && (
+                        <Link to={record.articleUrl}
+                          className="text-xs font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: accent }}>
+                          查看记录 <ChevronRight size={12} />
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => setAiWriting(aiWriting === record.id ? null : record.id)}
+                        className="text-xs px-3 py-1 rounded-lg border transition-all"
+                        style={{ borderColor, color: accent, background: aiWriting === record.id ? (isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)') : 'transparent' }}
+                      >
+                        {aiWriting === record.id ? '✍️ 写作中...' : '✍️ AI 写作'}
+                      </button>
+                    </div>
                   </div>
+                  {aiWriting === record.id && (
+                    <AIWriter
+                      type="exercise"
+                      record={record}
+                      onSave={({ topic, outline, article }) => {
+                        const newConfig = getConfig()
+                        const rec = newConfig.exercise.records.find(r => r.id === record.id)
+                        if (rec) {
+                          rec.articleTopic = topic
+                          rec.articleOutline = outline
+                          rec.articleContent = article
+                          rec.articleUpdatedAt = new Date().toISOString()
+                          saveConfig(newConfig)
+                          setConfig(getConfig())
+                        }
+                        setAiWriting(null)
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             ))}

@@ -16,6 +16,7 @@ const ICON_MAP = {
 
 function WorkCard({ work, theme }) {
   const isDark = theme === 'dark'
+  const [imgIndex, setImgIndex] = useState(0)
   
   const bg = isDark ? '#161B22' : '#FFFFFF'
   const text = isDark ? '#E6EDF3' : '#1C1C1E'
@@ -27,13 +28,50 @@ function WorkCard({ work, theme }) {
       className="rounded-2xl overflow-hidden transition-all hover:shadow-xl group"
       style={{ background: bg, border: `1px solid ${border}` }}
     >
-      {/* 封面图 */}
+      {/* 封面图 - 多图轮播 */}
       <div className="relative aspect-[16/10] overflow-hidden">
-        <img 
-          src={work.images?.[0] || 'https://placehold.co/600x340/2D6A4F/ffffff?text=No+Image'} 
-          alt={work.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        <div className="w-full h-full flex transition-transform duration-500" style={{ transform: `translateX(-${imgIndex * 100}%)` }}>
+          {(work.images && work.images.length > 0 ? work.images : ['https://placehold.co/600x340/2D6A4F/ffffff?text=No+Image']).map((img, i) => (
+            <img 
+              key={i}
+              src={img} 
+              alt={`${work.name} ${i + 1}`}
+              className="w-full h-full object-cover flex-shrink-0" 
+            />
+          ))}
+        </div>
+        
+        {/* 左右切换按钮 */}
+        {(work.images || []).length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.preventDefault(); setImgIndex(i => Math.max(0, i - 1)) }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all"
+            >
+              ←
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); setImgIndex(i => Math.min((work.images || []).length - 1, i + 1)) }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all"
+            >
+              →
+            </button>
+          </>
+        )}
+        
+        {/* 圆点指示器 */}
+        {(work.images || []).length > 1 && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {(work.images || []).map((_, i) => (
+              <button
+                key={i}
+                onClick={(e) => { e.preventDefault(); setImgIndex(i) }}
+                className="w-2 h-2 rounded-full transition-all" 
+                style={{ background: i === imgIndex ? '#fff' : 'rgba(255,255,255,0.5)' }}
+              />
+            ))}
+          </div>
+        )}
         
         {/* 渐变遮罩 */}
         <div 

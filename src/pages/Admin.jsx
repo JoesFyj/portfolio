@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { getConfig, saveConfig, resetConfig, exportConfig, importConfig } from '../config/siteConfig'
 import ImageUploader, { AvatarUploader } from '../components/ImageUploader'
+import MultiImageUploader from '../components/MultiImageUploader'
+import AIWriter from '../components/AIWriter'
 
 // 模块图标映射
 const MODULE_ICONS = {
@@ -611,15 +613,15 @@ export default function Admin({ theme }) {
                       />
                     </FormGroup>
                     
-                    <FormGroup label="封面图片">
-                      <ImageUploader
-                        value={work.images?.[0]}
+                    <FormGroup label="封面图片（支持多图）">
+                      <MultiImageUploader
+                        value={work.images || []}
                         onChange={(val) => {
                           const newItems = [...(config.works?.items || [])]
-                          newItems[index].images = [val]
+                          newItems[index].images = val
                           updateField('works', 'items', newItems)
                         }}
-                        theme={theme}
+                        label="作品封面（第一张为封面）"
                       />
                     </FormGroup>
                     
