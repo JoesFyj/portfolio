@@ -38,6 +38,7 @@ export default function Admin({ theme }) {
   const [expandedModules, setExpandedModules] = useState(['hero'])
   const [saveStatus, setSaveStatus] = useState('')
   const [previewMode, setPreviewMode] = useState(false)
+  const [aiWritingRecord, setAiWritingRecord] = useState(null) // { module: 'reading'|'exercise', idx: number }
 
   const bg = isDark ? '#0D1117' : '#FAF9F6'
   const text = isDark ? '#E6EDF3' : '#1C1C1E'
@@ -827,6 +828,31 @@ export default function Admin({ theme }) {
                       </div>
                       <textarea value={book.summary || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], summary: e.target.value }; setConfig(nc); }} placeholder="摘要..." rows={2} className="w-full px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
                       <input type="text" value={book.note || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], note: e.target.value }; setConfig(nc); }} placeholder="标签（逗号分隔）" className="w-full mt-1 px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                      <button
+                        onClick={() => setAiWritingRecord(aiWritingRecord?.module === 'reading' && aiWritingRecord?.idx === idx ? null : { module: 'reading', idx })}
+                        className="mt-2 text-xs px-3 py-1 rounded-lg border transition-all"
+                        style={{ borderColor: '#2D6A4F', color: '#2D6A4F', background: aiWritingRecord?.module === 'reading' && aiWritingRecord?.idx === idx ? 'rgba(45,106,79,0.15)' : 'transparent' }}
+                      >
+                        {aiWritingRecord?.module === 'reading' && aiWritingRecord?.idx === idx ? '✍️ 收起写作' : '✍️ AI 写作'}
+                      </button>
+                      {aiWritingRecord?.module === 'reading' && aiWritingRecord?.idx === idx && (
+                        <AIWriter
+                          type="reading"
+                          record={book}
+                          onSave={({ topic, outline, article }) => {
+                            const nc = { ...config }
+                            nc.reading.records[idx] = {
+                              ...nc.reading.records[idx],
+                              articleTopic: topic,
+                              articleOutline: outline,
+                              articleContent: article,
+                              articleUpdatedAt: new Date().toISOString()
+                            }
+                            setConfig(nc)
+                            setAiWritingRecord(null)
+                          }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -973,6 +999,31 @@ export default function Admin({ theme }) {
                         <input type="text" value={rec.duration || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], duration: e.target.value }; setConfig(nc); }} placeholder="时长" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
                       </div>
                       <textarea value={rec.note || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], note: e.target.value }; setConfig(nc); }} placeholder="心得..." rows={2} className="w-full px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                      <button
+                        onClick={() => setAiWritingRecord(aiWritingRecord?.module === 'exercise' && aiWritingRecord?.idx === idx ? null : { module: 'exercise', idx })}
+                        className="mt-2 text-xs px-3 py-1 rounded-lg border transition-all"
+                        style={{ borderColor: '#2D6A4F', color: '#2D6A4F', background: aiWritingRecord?.module === 'exercise' && aiWritingRecord?.idx === idx ? 'rgba(45,106,79,0.15)' : 'transparent' }}
+                      >
+                        {aiWritingRecord?.module === 'exercise' && aiWritingRecord?.idx === idx ? '✍️ 收起写作' : '✍️ AI 写作'}
+                      </button>
+                      {aiWritingRecord?.module === 'exercise' && aiWritingRecord?.idx === idx && (
+                        <AIWriter
+                          type="exercise"
+                          record={rec}
+                          onSave={({ topic, outline, article }) => {
+                            const nc = { ...config }
+                            nc.exercise.records[idx] = {
+                              ...nc.exercise.records[idx],
+                              articleTopic: topic,
+                              articleOutline: outline,
+                              articleContent: article,
+                              articleUpdatedAt: new Date().toISOString()
+                            }
+                            setConfig(nc)
+                            setAiWritingRecord(null)
+                          }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
