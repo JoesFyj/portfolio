@@ -260,6 +260,10 @@ ${has_story === 'yes' ? '可以用个人故事（甘肃深山、放牛、爷爷�
 
 export default defineConfig({
   optimizeDeps: { exclude: [] },
+  server: {
+    port: 5173,
+    strictPort: true, // 5173 被占用时直接报错，不 fallback 到其他端口
+  },
   plugins: [
     react(),
     {

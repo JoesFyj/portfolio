@@ -273,17 +273,28 @@ export function getConfig() {
     const saved = localStorage.getItem(CONFIG_KEY)
     if (saved) {
       const parsed = JSON.parse(saved)
-      // 用户配置优先，直接使用，不合并默认值
-      // 这样用户修改后的配置不会被默认值覆盖
-      return parsed
+      // 深度合并：用 DEFAULT_CONFIG 补全 parsed 中缺失的字段
+      // 这样新增配置字段时，老用户的 localStorage 也能自动补全
+      const merged = deepMerge(DEFAULT_CONFIG, parsed)
+      // 如果合并后有变化（说明 DEFAULT_CONFIG 新增了字段），回写 localStorage
+      if (JSON.stringify(merged) !== JSON.stringify(parsed)) {
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(merged))
+      }
+      return merged
     }
   } catch (e) {
     console.error('Failed to load config:', e)
+    // 数据损坏时清空 localStorage，下次进入用默认值
+    try { localStorage.removeItem(CONFIG_KEY) } catch {}
   }
   
-  // 首次加载，保存默认配置到 localStorage
+  // 首次加载，或数据损坏，保存默认配置到 localStorage
   const initial = JSON.parse(JSON.stringify(DEFAULT_CONFIG))
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(initial))
+  try {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(initial))
+  } catch (e) {
+    console.error('Failed to save default config:', e)
+  }
   return initial
 }
 
