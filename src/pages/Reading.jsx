@@ -194,8 +194,8 @@ export default function Reading({ theme }) {
                       )}
                       <button
                         onClick={() => setAiWriting(aiWriting === book.id ? null : book.id)}
-                        className="text-xs px-3 py-1 rounded-lg border transition-all"
-                        style={{ borderColor, color: accent, background: aiWriting === book.id ? (isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)') : 'transparent' }}
+                        className="flex-shrink-0 text-xs px-3 py-1 rounded-lg border transition-all hover:opacity-80"
+                        style={{ borderColor: accent, color: accent, background: aiWriting === book.id ? (isDark ? 'rgba(45,106,79,0.2)' : 'rgba(45,106,79,0.1)') : 'transparent' }}
                       >
                         {aiWriting === book.id ? '✍️ 写作中...' : '✍️ AI 写作'}
                       </button>

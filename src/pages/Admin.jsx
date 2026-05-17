@@ -758,10 +758,81 @@ export default function Admin({ theme }) {
                   />
                 </FormGroup>
               </div>
-            </ModuleSection>
-          )}
 
-          {/* 跑步模块配置 */}
+              {/* 阅读记录管理 */}
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>阅读记录 ({(config.reading.records || []).length})</h4>
+                  <button
+                    onClick={() => {
+                      const newRecord = {
+                        id: Date.now(),
+                        name: '新书名',
+                        cover: '📖',
+                        summary: '',
+                        note: '',
+                        readAt: new Date().toISOString().slice(0, 10),
+                        rating: 0,
+                        pages: 0,
+                        enabled: true,
+                        articleUrl: '',
+                        articleTopic: '',
+                        articleOutline: '',
+                        articleContent: '',
+                        articleUpdatedAt: '',
+                      }
+                      const newConfig = { ...config }
+                      newConfig.reading = { ...newConfig.reading, records: [...(newConfig.reading.records || []), newRecord] }
+                      setConfig(newConfig)
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                    style={{ background: accent, color: '#fff' }}
+                  >
+                    + 新增记录
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {(config.reading.records || []).map((book, idx) => (
+                    <div key={book.id} className="p-3 rounded-lg" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <input
+                          type="text"
+                          value={book.name}
+                          onChange={(e) => {
+                            const newConfig = { ...config }
+                            newConfig.reading.records[idx] = { ...newConfig.reading.records[idx], name: e.target.value }
+                            setConfig(newConfig)
+                          }}
+                          className="font-medium text-sm flex-1 mr-2 px-2 py-1 rounded border"
+                          style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }}
+                          placeholder="书名"
+                        />
+                        <button
+                          onClick={() => {
+                            const newConfig = { ...config }
+                            newConfig.reading.records = newConfig.reading.records.filter((_, i) => i !== idx)
+                            setConfig(newConfig)
+                          }}
+                          className="flex-shrink-0 p-1.5 rounded text-xs transition-all hover:bg-red-500/10"
+                          style={{ color: '#EF4444' }}
+                          title="删除"
+                        >
+                          ✕ 删除
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        <input type="text" value={book.readAt || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], readAt: e.target.value }; setConfig(nc); }} placeholder="日期" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                        <input type="number" value={book.pages || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], pages: parseInt(e.target.value) }; setConfig(nc); }} placeholder="页数" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                        <input type="number" min="0" max="5" value={book.rating || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], rating: parseInt(e.target.value) }; setConfig(nc); }} placeholder="评分1-5" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                      </div>
+                      <textarea value={book.summary || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], summary: e.target.value }; setConfig(nc); }} placeholder="摘要..." rows={2} className="w-full px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                      <input type="text" value={book.note || ''} onChange={(e) => { const nc = { ...config }; nc.reading.records[idx] = { ...nc.reading.records[idx], note: e.target.value }; setConfig(nc); }} placeholder="标签（逗号分隔）" className="w-full mt-1 px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ModuleSection>
+          )}{/* 跑步模块配置 */}
           {activeModule === 'exercise' && (
             <ModuleSection title="跑步模块配置" description="运动数据与记录">
               <FormGroup label="启用模块">
@@ -834,10 +905,80 @@ export default function Admin({ theme }) {
                   </FormGroup>
                 </div>
               </div>
-            </ModuleSection>
-          )}
 
-          {/* 关于模块配置 */}
+              {/* 跑步记录管理 */}
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>跑步记录 ({(config.exercise.records || []).length})</h4>
+                  <button
+                    onClick={() => {
+                      const newRecord = {
+                        id: Date.now(),
+                        title: '新跑步记录',
+                        date: new Date().toISOString().slice(0, 10),
+                        distance: 0,
+                        duration: '',
+                        pace: '',
+                        image: '',
+                        note: '',
+                        articleUrl: '',
+                        enabled: true,
+                        articleTopic: '',
+                        articleOutline: '',
+                        articleContent: '',
+                        articleUpdatedAt: '',
+                      }
+                      const newConfig = { ...config }
+                      newConfig.exercise = { ...newConfig.exercise, records: [...(newConfig.exercise.records || []), newRecord] }
+                      setConfig(newConfig)
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
+                    style={{ background: accent, color: '#fff' }}
+                  >
+                    + 新增记录
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {(config.exercise.records || []).map((rec, idx) => (
+                    <div key={rec.id} className="p-3 rounded-lg" style={{ background: cardBg, border: `1px solid ${border}` }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <input
+                          type="text"
+                          value={rec.title}
+                          onChange={(e) => {
+                            const nc = { ...config }
+                            nc.exercise.records[idx] = { ...nc.exercise.records[idx], title: e.target.value }
+                            setConfig(nc)
+                          }}
+                          className="font-medium text-sm flex-1 mr-2 px-2 py-1 rounded border"
+                          style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }}
+                          placeholder="标题"
+                        />
+                        <button
+                          onClick={() => {
+                            const nc = { ...config }
+                            nc.exercise.records = nc.exercise.records.filter((_, i) => i !== idx)
+                            setConfig(nc)
+                          }}
+                          className="flex-shrink-0 p-1.5 rounded text-xs transition-all hover:bg-red-500/10"
+                          style={{ color: '#EF4444' }}
+                          title="删除"
+                        >
+                          ✕ 删除
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        <input type="text" value={rec.date || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], date: e.target.value }; setConfig(nc); }} placeholder="日期" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                        <input type="number" value={rec.distance || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], distance: parseFloat(e.target.value) }; setConfig(nc); }} placeholder="距离km" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                        <input type="text" value={rec.duration || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], duration: e.target.value }; setConfig(nc); }} placeholder="时长" className="px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                      </div>
+                      <textarea value={rec.note || ''} onChange={(e) => { const nc = { ...config }; nc.exercise.records[idx] = { ...nc.exercise.records[idx], note: e.target.value }; setConfig(nc); }} placeholder="心得..." rows={2} className="w-full px-2 py-1 rounded border text-xs" style={{ borderColor: border, background: isDark ? '#0D1117' : '#FAF9F6', color: text }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ModuleSection>
+          )}{/* 关于模块配置 */}
           {activeModule === 'about' && (
             <ModuleSection title="联系页面配置" description="主视觉卡片与快捷链接">
               <FormGroup label="启用模块">
