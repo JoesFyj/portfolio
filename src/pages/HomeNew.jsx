@@ -285,8 +285,8 @@ export default function HomeNew({ theme }) {
       
       {/* ===== Hero - 左右布局 ===== */}
       {heroConfig.enabled !== false && (
-        <section className="flex items-center" style={{ minHeight: '90dvh', paddingTop: '4rem' }}>
-          <div className="w-full max-w-6xl mx-auto px-6">
+        <section className="relative flex items-center" style={{ minHeight: '90dvh', paddingTop: '4rem' }}>
+          <div className="relative z-10 w-full max-w-6xl mx-auto px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
