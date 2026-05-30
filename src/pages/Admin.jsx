@@ -1169,34 +1169,49 @@ export default function Admin({ theme }) {
               </FormGroup>
               
               <FormGroup label="主视觉背景图">
+                <ImageUploader
+                  value={config.about?.heroImage || ''}
+                  onChange={(val) => updateField('about', 'heroImage', val)}
+                  theme={theme}
+                />
                 <input
                   type="text"
                   value={config.about?.heroImage || ''}
                   onChange={(e) => updateField('about', 'heroImage', e.target.value)}
-                  placeholder="图片 URL 或 base64"
-                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  placeholder="或直接输入图片 URL"
+                  className="w-full px-4 py-2 rounded-lg border text-sm mt-3"
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
               </FormGroup>
               
               <FormGroup label="公众号二维码">
+                <ImageUploader
+                  value={config.about?.qrcodes?.wechatOfficial || ''}
+                  onChange={(val) => updateNestedField('about', 'qrcodes.wechatOfficial', val)}
+                  theme={theme}
+                />
                 <input
                   type="text"
                   value={config.about?.qrcodes?.wechatOfficial || ''}
                   onChange={(e) => updateNestedField('about', 'qrcodes.wechatOfficial', e.target.value)}
-                  placeholder="图片 URL 或 base64"
-                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  placeholder="或直接输入图片 URL"
+                  className="w-full px-4 py-2 rounded-lg border text-sm mt-3"
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
               </FormGroup>
               
               <FormGroup label="个人微信二维码">
+                <ImageUploader
+                  value={config.about?.qrcodes?.wechat || ''}
+                  onChange={(val) => updateNestedField('about', 'qrcodes.wechat', val)}
+                  theme={theme}
+                />
                 <input
                   type="text"
                   value={config.about?.qrcodes?.wechat || ''}
                   onChange={(e) => updateNestedField('about', 'qrcodes.wechat', e.target.value)}
-                  placeholder="图片 URL 或 base64"
-                  className="w-full px-4 py-2 rounded-lg border text-sm"
+                  placeholder="或直接输入图片 URL"
+                  className="w-full px-4 py-2 rounded-lg border text-sm mt-3"
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
               </FormGroup>
