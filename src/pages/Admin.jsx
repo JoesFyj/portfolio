@@ -310,6 +310,114 @@ export default function Admin({ theme }) {
                   style={{ borderColor: border, background: cardBg, color: text }}
                 />
               </FormGroup>
+
+              {/* 打字机效果 */}
+              <div className="mt-6 pt-6" style={{ borderTop: `1px solid ${border}` }}>
+                <h4 className="text-sm font-bold mb-4" style={{ color: text }}>打字机效果</h4>
+                
+                <FormGroup label="启用打字机">
+                  <Toggle 
+                    checked={config.hero?.typewriter?.enabled !== false} 
+                    onChange={() => updateField('hero', 'typewriter', { ...config.hero?.typewriter, enabled: config.hero?.typewriter?.enabled === false })}
+                  />
+                </FormGroup>
+
+                {config.hero?.typewriter?.enabled !== false && (
+                  <>
+                    <FormGroup label='固定文字（如："我是"）'>
+                      <input
+                        type="text"
+                        value={config.hero?.typewriter?.fixedText || '我是'}
+                        onChange={(e) => updateField('hero', 'typewriter', { ...config.hero?.typewriter, fixedText: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                      />
+                    </FormGroup>
+
+                    <FormGroup label="打字内容 1">
+                      <input
+                        type="text"
+                        value={(config.hero?.typewriter?.texts || [])[0] || ''}
+                        onChange={(e) => {
+                          const texts = [...(config.hero?.typewriter?.texts || [])]
+                          texts[0] = e.target.value
+                          updateField('hero', 'typewriter', { ...config.hero?.typewriter, texts })
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                        placeholder="如：AI开发者"
+                      />
+                    </FormGroup>
+
+                    <FormGroup label="打字内容 2">
+                      <input
+                        type="text"
+                        value={(config.hero?.typewriter?.texts || [])[1] || ''}
+                        onChange={(e) => {
+                          const texts = [...(config.hero?.typewriter?.texts || [])]
+                          texts[1] = e.target.value
+                          updateField('hero', 'typewriter', { ...config.hero?.typewriter, texts })
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                        placeholder="如：自媒体作者"
+                      />
+                    </FormGroup>
+
+                    <FormGroup label="打字内容 3">
+                      <input
+                        type="text"
+                        value={(config.hero?.typewriter?.texts || [])[2] || ''}
+                        onChange={(e) => {
+                          const texts = [...(config.hero?.typewriter?.texts || [])]
+                          texts[2] = e.target.value
+                          updateField('hero', 'typewriter', { ...config.hero?.typewriter, texts })
+                        }}
+                        className="w-full px-4 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: border, background: cardBg, color: text }}
+                        placeholder="如：终身学习者"
+                      />
+                    </FormGroup>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormGroup label="我是 颜色">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.hero?.typewriter?.fixedColor || '#D4A574'}
+                            onChange={(e) => updateField('hero', 'typewriter', { ...config.hero?.typewriter, fixedColor: e.target.value })}
+                            className="w-10 h-10 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={config.hero?.typewriter?.fixedColor || '#D4A574'}
+                            onChange={(e) => updateField('hero', 'typewriter', { ...config.hero?.typewriter, fixedColor: e.target.value })}
+                            className="flex-1 px-3 py-2 rounded-lg border text-sm font-mono"
+                            style={{ borderColor: border, background: cardBg, color: text }}
+                          />
+                        </div>
+                      </FormGroup>
+                      <FormGroup label="内容 颜色">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={config.hero?.typewriter?.typingColor || '#2D6A4F'}
+                            onChange={(e) => updateField('hero', 'typewriter', { ...config.hero?.typewriter, typingColor: e.target.value })}
+                            className="w-10 h-10 rounded cursor-pointer border-0"
+                          />
+                          <input
+                            type="text"
+                            value={config.hero?.typewriter?.typingColor || '#2D6A4F'}
+                            onChange={(e) => updateField('hero', 'typewriter', { ...config.hero?.typewriter, typingColor: e.target.value })}
+                            className="flex-1 px-3 py-2 rounded-lg border text-sm font-mono"
+                            style={{ borderColor: border, background: cardBg, color: text }}
+                          />
+                        </div>
+                      </FormGroup>
+                    </div>
+                  </>
+                )}
+              </div>
             </ModuleSection>
           )}
 

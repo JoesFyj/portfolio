@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, Activity, Zap, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { getConfig } from '../config/siteConfig'
+import TypewriterText from '../components/TypewriterText'
 
 function useSiteConfig() {
   const [config, setConfig] = useState(() => getConfig())
@@ -190,9 +191,23 @@ export default function HomeNew({ theme }) {
                   </div>
                 </div>
 
-                <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4" style={{ color: text }}>
-                  {heroConfig.title}
-                </h1>
+                {heroConfig.typewriter?.enabled ? (
+                  <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4" style={{ color: text }}>
+                    <TypewriterText
+                      texts={heroConfig.typewriter.texts || []}
+                      fixedText={heroConfig.typewriter.fixedText || '我是'}
+                      fixedColor={heroConfig.typewriter.fixedColor || text}
+                      typingColor={heroConfig.typewriter.typingColor || accent}
+                      typingSpeed={heroConfig.typewriter.typingSpeed || 100}
+                      deleteSpeed={heroConfig.typewriter.deleteSpeed || 50}
+                      pauseTime={heroConfig.typewriter.pauseTime || 2000}
+                    />
+                  </h1>
+                ) : (
+                  <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-4" style={{ color: text }}>
+                    {heroConfig.title}
+                  </h1>
+                )}
                 <p className="text-base md:text-lg mb-6 max-w-lg leading-relaxed" style={{ color: muted }}>
                   {heroConfig.subtitle}
                 </p>

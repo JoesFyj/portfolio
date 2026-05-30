@@ -11,6 +11,17 @@ const DEFAULT_CONFIG = {
     title: '你好，我是小福',
     subtitle: '一个人 + 7个AI Agent = 24小时帮你干活',
     motto: '少工作，多赚钱，以书为粮，以路为行',
+    // 打字机效果
+    typewriter: {
+      enabled: true,
+      texts: ['AI开发者', '自媒体作者', '终身学习者'],
+      fixedText: '我是',
+      fixedColor: '#D4A574',
+      typingColor: '#2D6A4F',
+      typingSpeed: 100,
+      deleteSpeed: 50,
+      pauseTime: 2000,
+    },
     buttons: [
       { label: '自媒体+AI实验', link: '/works', icon: 'Zap', primary: true },
       { label: '读书', link: '#reading', icon: 'BookOpen', primary: false },
