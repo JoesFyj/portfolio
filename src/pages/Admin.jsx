@@ -1005,6 +1005,169 @@ export default function Admin({ theme }) {
                     theme={theme}
                   />
                 </FormGroup>
+                <FormGroup label="地图标题">
+                  <input
+                    type="text"
+                    value={config.exercise.trajectory?.title || '跑步轨迹全貌'}
+                    onChange={(e) => updateNestedField('exercise', 'trajectory.title', e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border text-sm mt-3"
+                    style={{ borderColor: border, background: cardBg, color: text }}
+                  />
+                </FormGroup>
+                <FormGroup label="说明文字">
+                  <textarea
+                    value={config.exercise.trajectory?.description || ''}
+                    onChange={(e) => updateNestedField('exercise', 'trajectory.description', e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border text-sm mt-3"
+                    rows={2}
+                    style={{ borderColor: border, background: cardBg, color: text, resize: 'vertical' }}
+                  />
+                </FormGroup>
+              </div>
+
+              {/* 城市坐标配置 */}
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>城市坐标 ({(config.exercise.trajectory?.cities || []).length}个)</h4>
+                  <button
+                    onClick={() => {
+                      const cities = [...(config.exercise.trajectory?.cities || [])]
+                      cities.push({ name: '', lng: 116.4, lat: 39.9 })
+                      updateNestedField('exercise', 'trajectory.cities', cities)
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ background: accent, color: '#fff' }}
+                  >+ 添加城市</button>
+                </div>
+                {(config.exercise.trajectory?.cities || []).map((city, idx) => (
+                  <div key={idx} className="flex items-center gap-3 mb-3">
+                    <input
+                      type="text"
+                      value={city.name}
+                      onChange={(e) => {
+                        const cities = [...(config.exercise.trajectory?.cities || [])]
+                        cities[idx] = { ...cities[idx], name: e.target.value }
+                        updateNestedField('exercise', 'trajectory.cities', cities)
+                      }}
+                      placeholder="城市名"
+                      className="flex-1 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="number"
+                      value={city.lng}
+                      onChange={(e) => {
+                        const cities = [...(config.exercise.trajectory?.cities || [])]
+                        cities[idx] = { ...cities[idx], lng: parseFloat(e.target.value) }
+                        updateNestedField('exercise', 'trajectory.cities', cities)
+                      }}
+                      placeholder="经度"
+                      step="0.01"
+                      className="w-20 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="number"
+                      value={city.lat}
+                      onChange={(e) => {
+                        const cities = [...(config.exercise.trajectory?.cities || [])]
+                        cities[idx] = { ...cities[idx], lat: parseFloat(e.target.value) }
+                        updateNestedField('exercise', 'trajectory.cities', cities)
+                      }}
+                      placeholder="纬度"
+                      step="0.01"
+                      className="w-20 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <button
+                      onClick={() => {
+                        const cities = [...(config.exercise.trajectory?.cities || [])]
+                        cities.splice(idx, 1)
+                        updateNestedField('exercise', 'trajectory.cities', cities)
+                      }}
+                      className="px-2 py-2 rounded-lg text-xs"
+                      style={{ color: '#EF4444' }}
+                    >🗑</button>
+                  </div>
+                ))}
+              </div>
+
+              {/* 跑步路线配置 */}
+              <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium" style={{ color: text }}>跑步路线 ({(config.exercise.trajectory?.routes || []).length}条)</h4>
+                  <button
+                    onClick={() => {
+                      const routes = [...(config.exercise.trajectory?.routes || [])]
+                      routes.push({ from: '', to: '', date: '', distance: 0 })
+                      updateNestedField('exercise', 'trajectory.routes', routes)
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                    style={{ background: accent, color: '#fff' }}
+                  >+ 添加路线</button>
+                </div>
+                {(config.exercise.trajectory?.routes || []).map((route, idx) => (
+                  <div key={idx} className="flex items-center gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={route.from}
+                      onChange={(e) => {
+                        const routes = [...(config.exercise.trajectory?.routes || [])]
+                        routes[idx] = { ...routes[idx], from: e.target.value }
+                        updateNestedField('exercise', 'trajectory.routes', routes)
+                      }}
+                      placeholder="起点"
+                      className="flex-1 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <span style={{ color: muted }}>→</span>
+                    <input
+                      type="text"
+                      value={route.to}
+                      onChange={(e) => {
+                        const routes = [...(config.exercise.trajectory?.routes || [])]
+                        routes[idx] = { ...routes[idx], to: e.target.value }
+                        updateNestedField('exercise', 'trajectory.routes', routes)
+                      }}
+                      placeholder="终点"
+                      className="flex-1 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="text"
+                      value={route.date}
+                      onChange={(e) => {
+                        const routes = [...(config.exercise.trajectory?.routes || [])]
+                        routes[idx] = { ...routes[idx], date: e.target.value }
+                        updateNestedField('exercise', 'trajectory.routes', routes)
+                      }}
+                      placeholder="日期"
+                      className="w-24 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <input
+                      type="number"
+                      value={route.distance}
+                      onChange={(e) => {
+                        const routes = [...(config.exercise.trajectory?.routes || [])]
+                        routes[idx] = { ...routes[idx], distance: parseInt(e.target.value) || 0 }
+                        updateNestedField('exercise', 'trajectory.routes', routes)
+                      }}
+                      placeholder="km"
+                      className="w-16 px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: border, background: cardBg, color: text }}
+                    />
+                    <button
+                      onClick={() => {
+                        const routes = [...(config.exercise.trajectory?.routes || [])]
+                        routes.splice(idx, 1)
+                        updateNestedField('exercise', 'trajectory.routes', routes)
+                      }}
+                      className="px-2 py-2 rounded-lg text-xs"
+                      style={{ color: '#EF4444' }}
+                    >🗑</button>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-6 p-4 rounded-lg" style={{ background: isDark ? '#0D1117' : '#F8F7F4' }}>

@@ -93,7 +93,7 @@ export default function Exercise({ theme }) {
               border: `1px solid ${border}`,
             }}
           >
-            <ChinaMapTrajectory theme={theme} />
+            <ChinaMapTrajectory theme={theme} config={trajectory} />
             <div className="p-5">
               <div className="flex items-center gap-2 mb-2">
                 <MapPin size={16} style={{ color: accent }} />

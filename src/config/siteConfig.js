@@ -191,6 +191,19 @@ const DEFAULT_CONFIG = {
       title: '跑步轨迹全貌',
       subtitle: '📍 兰州 → 天水 → 西安',
       description: '从甘肃深山出发，一路向东。每一步都是向前的路，每一公里都是自由的积累。',
+      cities: [
+        { name: '兰州', lng: 103.73, lat: 36.03 },
+        { name: '天水', lng: 105.72, lat: 34.58 },
+        { name: '西安', lng: 108.95, lat: 34.27 },
+        { name: '成都', lng: 104.07, lat: 30.57 },
+        { name: '重庆', lng: 106.55, lat: 29.57 },
+        { name: '北京', lng: 116.40, lat: 39.90 },
+        { name: '上海', lng: 121.47, lat: 31.23 },
+      ],
+      routes: [
+        { from: '兰州', to: '天水', date: '2025-09', distance: 340 },
+        { from: '天水', to: '西安', date: '2025-12', distance: 400 },
+      ],
     },
     records: [
       {
